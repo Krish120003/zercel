@@ -13,4 +13,19 @@ terraform {
     }
 }
 
+# Create Cloud Tasks queue
+resource "google_cloud_tasks_queue" "build_queue" {
+  name     = "build-queue"
+  location = "us-east1"
+  
+  rate_limits {
+    max_concurrent_dispatches = 10  # Default concurrent tasks limit
+    max_dispatches_per_second = 10   # Default rate limit
+  }
+  
+  retry_config {
+    max_attempts = 1  # No retries, but will record failure
+  }
+}
+
 
