@@ -17,7 +17,8 @@
     "lint:fix": "next lint --fix",
     "preview": "next build && next start",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:container": "docker build -t gcr.io/vercel-clone-1/web ."
   },
   "dependencies": {
     "@google-cloud/tasks": "4.0.1",
