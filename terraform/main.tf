@@ -296,6 +296,21 @@ resource "google_compute_backend_service" "router_backend" {
 resource "google_compute_url_map" "router_urlmap" {
   name            = "z-router-urlmap"
   default_service = google_compute_backend_service.router_backend.id
+
+  host_rule {
+    hosts        = ["*.zercel.dev"]
+    path_matcher = "path-matcher-1"
+  }
+
+  path_matcher {
+    name            = "path-matcher-1"
+    default_service = google_compute_backend_service.router_backend.id
+
+    path_rule {
+      paths   = ["/"]
+      service = google_compute_backend_service.router_backend.id
+    }
+  }
 }
 
 # Create a target HTTPS proxy
