@@ -16,7 +16,7 @@ COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml\* ./
 #     else echo "Lockfile not found." && exit 1; \
 #     fi
 
-RUN npm i @google-cloud/tasks@4.0.1
+RUN npm i 
 
 ##### BUILDER
 
