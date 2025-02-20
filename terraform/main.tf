@@ -129,7 +129,7 @@ resource "google_cloud_run_service_iam_member" "public_access" {
 }
 
 # ===================
-# Buil`r Configuration
+# Builder Configuration
 # ===================
 
 # Generates a random suffix for the bucket name to ensure uniqueness
@@ -153,11 +153,11 @@ resource "google_storage_bucket" "builder_bucket" {
 }
 
 // Add IAM policy to make the bucket public
-resource "google_storage_bucket_iam_member" "public_rule" {
-  bucket = google_storage_bucket.builder_bucket.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
-}
+# resource "google_storage_bucket_iam_member" "public_rule" {
+#   bucket = google_storage_bucket.builder_bucket.name
+#   role   = "roles/storage.objectViewer"
+#   member = "allUsers"
+# }
 
 # Creates a Cloud Run Job for the builder service
 resource "google_cloud_run_v2_job" "builder" {
@@ -182,7 +182,7 @@ resource "google_cloud_run_v2_job" "builder" {
         # Resource configuration for builder
         resources {
           limits = {
-            cpu    = "2000m"  # 2 CPU cores for build tasks
+            cpu    = "1000m"  # 1 CPU core for build tasks
             memory = "2048Mi" # 2GB RAM for build tasks
           }
         }
@@ -198,11 +198,145 @@ resource "google_cloud_run_v2_job" "builder" {
 
       # Job execution configuration
       max_retries = 0      # No retries for failed builds
-      timeout     = "600s" # 10 minute timeout for builds
+      timeout     = "300s" # 5 minute timeout for builds
     }
   }
 }
 
+# ===================
+# Router Configuration
+# ===================
+
+# The router is a Hono.js app that routes to the right files
+resource "google_cloud_run_v2_service" "router" {
+  name                = "router"
+  location            = "us-east1"
+  deletion_protection = false
+
+  template {
+    volumes {
+      name = "builder-storage"
+
+      gcs {
+        bucket    = google_storage_bucket.builder_bucket.name
+        read_only = true # Read-only access
+      }
+    }
+    containers {
+      image = "gcr.io/${var.project_id}/router:latest"
+
+      # Resource limits for the container
+      resources {
+        limits = {
+          cpu    = "1000m" # 1 CPU core
+          memory = "512Mi" # 512MB RAM
+        }
+      }
+
+      volume_mounts {
+        name       = "builder-storage"
+        mount_path = "/data" # Mount point inside container
+      }
+
+      # Environment variable configuration
+      env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = "vercel-clone-1"
+      }
+    }
+
+    # Auto-scaling configuration
+    scaling {
+      max_instance_count = 1
+      min_instance_count = 0
+    }
+  }
+}
+
+# Make the router publicly accessible
+resource "google_cloud_run_service_iam_member" "router_public_access" {
+  location = google_cloud_run_v2_service.router.location
+  service  = google_cloud_run_v2_service.router.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ===================
+# LB Configuration
+# ===================
+
+# Create a serverless NEG for the router service
+resource "google_compute_region_network_endpoint_group" "router_neg" {
+  name                  = "z-router-neg"
+  network_endpoint_type = "SERVERLESS"
+  region                = "us-east1"
+  cloud_run {
+    service = google_cloud_run_v2_service.router.name
+  }
+}
+
+# Create a backend service with external managed load balancing
+resource "google_compute_backend_service" "router_backend" {
+  name                  = "z-router-backend"
+  protocol              = "HTTPS"
+  port_name             = "http"
+  timeout_sec           = 30
+  load_balancing_scheme = "EXTERNAL_MANAGED" # Add this line
+
+  backend {
+    group = google_compute_region_network_endpoint_group.router_neg.id
+  }
+}
+
+# Create a URL Map
+resource "google_compute_url_map" "router_urlmap" {
+  name            = "z-router-urlmap"
+  default_service = google_compute_backend_service.router_backend.id
+}
+
+# Create a target HTTPS proxy
+resource "google_compute_target_https_proxy" "router_proxy" {
+  name             = "z-router-proxy"
+  url_map          = google_compute_url_map.router_urlmap.id
+  ssl_certificates = [google_compute_managed_ssl_certificate.lb_cert.id]
+}
+
+# Create a global IP address for the load balancer
+resource "google_compute_global_address" "router_ip" {
+  name = "z-ip-2"
+}
+
+# Create a forwarding rule
+resource "google_compute_global_forwarding_rule" "router_rule" {
+  name                  = "z-router-rule"
+  target                = google_compute_target_https_proxy.router_proxy.id
+  port_range            = "443"
+  ip_address            = google_compute_global_address.router_ip.address
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+}
+
+# ===================
+# SSL Cert
+# ===================
+
+resource "google_compute_managed_ssl_certificate" "lb_cert" {
+  provider = google
+  name     = "z-ssl-cert-1"
+
+  managed {
+    domains = ["zercel.dev"]
+  }
+}
+
+# Add output for the load balancer IP
+output "load_balancer_ip" {
+  value       = google_compute_global_address.router_ip.address
+  description = "IP address for zercel.dev DNS A record"
+}
 
 # ===================
 # Output Variables
