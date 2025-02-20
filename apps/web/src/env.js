@@ -13,8 +13,15 @@ export const env = createEnv({
       .default("development"),
 
     GOOGLE_CLOUD_PROJECT: z.string(),
-    GOOGLE_CLOUD_TASKS_LOCATION: z.string(),
-    GOOGLE_CLOUD_TASKS_QUEUE: z.string(),
+    // Removed Cloud Tasks variables
+    // GOOGLE_CLOUD_TASKS_LOCATION: z.string(),
+    // GOOGLE_CLOUD_TASKS_QUEUE: z.string(),
+
+    // Added Builder Job details for triggering backend actions
+    BUILDER_JOB_LOCATION: z.string(),
+    BUILDER_JOB_NAME: z.string(),
+
+    BUILD_BUCKET: z.string(),
 
     GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
   },
@@ -37,8 +44,12 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
 
     GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
-    GOOGLE_CLOUD_TASKS_LOCATION: process.env.GOOGLE_CLOUD_TASKS_LOCATION,
-    GOOGLE_CLOUD_TASKS_QUEUE: process.env.GOOGLE_CLOUD_TASKS_QUEUE,
+    // Removed Cloud Tasks environment variables
+    // GOOGLE_CLOUD_TASKS_LOCATION: process.env.GOOGLE_CLOUD_TASKS_LOCATION,
+    // GOOGLE_CLOUD_TASKS_QUEUE: process.env.GOOGLE_CLOUD_TASKS_QUEUE,
+
+    BUILDER_JOB_LOCATION: process.env.BUILDER_JOB_LOCATION,
+    BUILDER_JOB_NAME: process.env.BUILDER_JOB_NAME,
 
     GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
   },
@@ -53,7 +64,3 @@ export const env = createEnv({
    */
   emptyStringAsUndefined: true,
 });
-
-console.log("ENV IS", process.env);
-console.log("DATABASE_URL IS", process.env.DATABASE_URL);
-console.log(process.env.DATABASE_URL);

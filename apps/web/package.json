@@ -21,6 +21,7 @@
     "build:container": "docker build -t gcr.io/vercel-clone-1/web ."
   },
   "dependencies": {
+    "@google-cloud/run": "^1.5.0",
     "@google-cloud/tasks": "4.0.1",
     "@t3-oss/env-nextjs": "^0.10.1",
     "@tanstack/react-query": "^5.50.0",
