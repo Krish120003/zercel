@@ -44,3 +44,20 @@ else echo "Lockfile not found." && exit 1; \
 fi
 
 # TODO: Export somehow? for now its gonna be a mounted volume so should be all good
+
+# lets copy the files to "/workspace/(sha256 of repo url)"
+# this is so we can have a unique folder for each build
+
+# Get the sha256 of the repo url
+REPO_SHA=$(echo -n "$REPO_URL" | sha256sum | cut -d ' ' -f 1)
+
+
+echo "Cleaning workspace at /workspace/$REPO_SHA"
+# clean the workspace
+rm -rf "/workspace/$REPO_SHA"
+
+echo "Copying files to /workspace/$REPO_SHA"
+# Copy the files to the workspace
+cp -r dist "/workspace/$REPO_SHA"
+
+echo "Build completed successfully."
