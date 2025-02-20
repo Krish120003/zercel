@@ -335,7 +335,7 @@ resource "google_compute_global_forwarding_rule" "router_rule" {
 }
 
 # ===================
-# SSL Cert
+# SSL Cert and Domain
 # ===================
 
 resource "google_compute_managed_ssl_certificate" "lb_cert" {
@@ -346,6 +346,24 @@ resource "google_compute_managed_ssl_certificate" "lb_cert" {
     domains = ["zercel.dev"]
   }
 }
+
+
+resource "google_certificate_manager_dns_authorization" "zercel-dev-root-dns-auth" {
+  name   = "zercel-dev-root-dns-auth"
+  domain = "zercel.dev"
+}
+
+
+# now we need the certificate
+resource "google_certificate_manager_certificate" "zercel-dev-cert" {
+  name = "zercel-dev-cert"
+  managed {
+    domains            = ["zercel.dev", "*.zercel.dev"]
+    dns_authorizations = [google_certificate_manager_dns_authorization.zercel-dev-root-dns-auth.id]
+  }
+}
+
+
 
 # Add output for the load balancer IP
 output "load_balancer_ip" {
@@ -375,4 +393,9 @@ output "builder_job_name" {
 
 output "builder_bucket_name" {
   value = google_storage_bucket.builder_bucket.name
+}
+
+
+output "root_dns_authorization_record" {
+  value = google_certificate_manager_dns_authorization.zercel-dev-root-dns-auth.dns_resource_record
 }
