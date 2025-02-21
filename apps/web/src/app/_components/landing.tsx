@@ -1,7 +1,7 @@
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "~/components/ui/button";
-import LoginButton from "./login-button";
+import AuthButton from "./auth-button";
+import { auth } from "~/server/auth";
 
 export function Logo({ className = "h-6 w-6" }: { className?: string }) {
   return (
@@ -16,7 +16,9 @@ export function Logo({ className = "h-6 w-6" }: { className?: string }) {
   );
 }
 
-export function Nav() {
+export async function Nav() {
+  const session = await auth();
+
   return (
     <nav className="border-b border-gray-800 bg-black">
       <div className="container mx-auto px-4">
@@ -52,7 +54,7 @@ export function Nav() {
               Learn More
             </Button>
 
-            <LoginButton>Log In</LoginButton>
+            <AuthButton loggedIn={session !== null} />
           </div>
         </div>
       </div>
