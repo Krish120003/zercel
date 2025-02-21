@@ -318,12 +318,21 @@ resource "google_compute_target_https_proxy" "router_proxy" {
   name             = "z-router-proxy"
   url_map          = google_compute_url_map.router_urlmap.id
   ssl_certificates = [google_compute_managed_ssl_certificate.lb_cert.id]
+  # certificate_manager_certificates = [google_certificate_manager_certificate.zercel-dev-cert.id]
+  # certificate_map = google_certificate_manager_certificate_map.z-map.id
+  certificate_map = "//certificatemanager.googleapis.com/${google_certificate_manager_certificate_map.z-map.id}"
+
 }
 
 # Create a global IP address for the load balancer
 resource "google_compute_global_address" "router_ip" {
   name = "z-ip-2"
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
+
 
 # Create a forwarding rule
 resource "google_compute_global_forwarding_rule" "router_rule" {
@@ -364,12 +373,29 @@ resource "google_certificate_manager_certificate" "zercel-dev-cert" {
 }
 
 
-
-# Add output for the load balancer IP
-output "load_balancer_ip" {
-  value       = google_compute_global_address.router_ip.address
-  description = "IP address for zercel.dev DNS A record"
+resource "google_certificate_manager_certificate_map" "z-map" {
+  name = "z-map"
 }
+
+# FIXME: Investigate this not working due to random 404
+# gcloud certificate-manager map-entries create z-root-cert-map-entry \
+#   --map=z-map \
+#   --certificates=zercel-dev-cert \
+#   --hostname=zercel.dev
+
+# resource "google_certificate_manager_certificate_map_entry" "z-root-cert-map-entry" {
+#   name         = "z-root-cert-map-entry"
+#   map          = google_certificate_manager_certificate_map.z-map.id
+#   certificates = [google_certificate_manager_certificate.zercel-dev-cert.id]
+#   hostname     = "zercel.dev"
+# }
+
+# resource "google_certificate_manager_certificate_map_entry" "z-wild-cert-map-entry" {
+#   name         = "z-wild-cert-map-entry"
+#   map          = google_certificate_manager_certificate_map.z-map.id
+#   certificates = [google_certificate_manager_certificate.zercel-dev-cert.id]
+#   hostname     = "*.zercel.dev"
+# }
 
 # ===================
 # Output Variables
@@ -395,7 +421,13 @@ output "builder_bucket_name" {
   value = google_storage_bucket.builder_bucket.name
 }
 
-
 output "root_dns_authorization_record" {
   value = google_certificate_manager_dns_authorization.zercel-dev-root-dns-auth.dns_resource_record
+}
+
+
+# Add output for the load balancer IP
+output "load_balancer_ip" {
+  value       = google_compute_global_address.router_ip.address
+  description = "IP address for zercel.dev DNS A record"
 }
