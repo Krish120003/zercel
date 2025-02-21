@@ -53,7 +53,7 @@ export async function Nav() {
 
 function HeroGraphic() {
   return (
-    <div className="relative mt-16 h-[40vh] w-full">
+    <div className="relative h-[40vh] w-full">
       {/* Rainbow Lines Background */}
       <svg
         viewBox="0 0 1200 400"
@@ -97,13 +97,15 @@ export function LandingPage() {
     <>
       <Nav />
       <main className="bg-background relative flex-1 overflow-hidden pb-32">
-        <div className="container mx-auto px-4 py-24">
+        {/* Hero Graphic */}
+        <HeroGraphic />
+        <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col items-center gap-12 text-center">
             <div className="max-w-4xl space-y-6">
               <h1 className="text-foreground text-balance text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
                 Your incomplete platform for the web.
               </h1>
-              <p className="text-muted-foreground mx-auto max-w-2xl text-lg md:text-xl">
+              <p className="text-muted-foreground mx-auto max-w-2xl text-balance text-lg md:text-xl">
                 Zercel provides the developer tools and cloud infrastructure to
                 build, scale, and secure more shitposts on the web.
               </p>
@@ -117,9 +119,6 @@ export function LandingPage() {
                 Ship Now <span aria-hidden="true">→</span>
               </Button>
             </div>
-
-            {/* Hero Graphic */}
-            <HeroGraphic />
           </div>
         </div>
         <div className="absolute bottom-0 w-full">

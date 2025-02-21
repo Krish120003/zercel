@@ -1,7 +1,7 @@
 // Example model schema from the Drizzle docs
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   timestamp,
@@ -10,6 +10,7 @@ import {
   primaryKey,
   integer,
   pgTableCreator,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -23,7 +24,9 @@ import type { AdapterAccount } from "next-auth/adapters";
  */
 export const createTable = pgTableCreator((name) => `web_${name}`);
 
-export const users = pgTable("user", {
+// ========== NextAuth Schema (DO NOT TOUCH) ====================
+
+export const users = createTable("user", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -33,7 +36,7 @@ export const users = pgTable("user", {
   image: text("image"),
 });
 
-export const accounts = pgTable(
+export const accounts = createTable(
   "account",
   {
     userId: text("userId")
@@ -58,7 +61,7 @@ export const accounts = pgTable(
   }),
 );
 
-export const sessions = pgTable("session", {
+export const sessions = createTable("session", {
   sessionToken: text("sessionToken").primaryKey(),
   userId: text("userId")
     .notNull()
@@ -66,7 +69,7 @@ export const sessions = pgTable("session", {
   expires: timestamp("expires", { mode: "date" }).notNull(),
 });
 
-export const verificationTokens = pgTable(
+export const verificationTokens = createTable(
   "verificationToken",
   {
     identifier: text("identifier").notNull(),
@@ -80,23 +83,106 @@ export const verificationTokens = pgTable(
   }),
 );
 
-export const authenticators = pgTable(
-  "authenticator",
-  {
-    credentialID: text("credentialID").notNull().unique(),
-    userId: text("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    providerAccountId: text("providerAccountId").notNull(),
-    credentialPublicKey: text("credentialPublicKey").notNull(),
-    counter: integer("counter").notNull(),
-    credentialDeviceType: text("credentialDeviceType").notNull(),
-    credentialBackedUp: boolean("credentialBackedUp").notNull(),
-    transports: text("transports"),
-  },
-  (authenticator) => ({
-    compositePK: primaryKey({
-      columns: [authenticator.userId, authenticator.credentialID],
-    }),
+// export const authenticators = createTable(
+//   "authenticator",
+//   {
+//     credentialID: text("credentialID").notNull().unique(),
+//     userId: text("userId")
+//       .notNull()
+//       .references(() => users.id, { onDelete: "cascade" }),
+//     providerAccountId: text("providerAccountId").notNull(),
+//     credentialPublicKey: text("credentialPublicKey").notNull(),
+//     counter: integer("counter").notNull(),
+//     credentialDeviceType: text("credentialDeviceType").notNull(),
+//     credentialBackedUp: boolean("credentialBackedUp").notNull(),
+//     transports: text("transports"),
+//   },
+//   (authenticator) => ({
+//     compositePK: primaryKey({
+//       columns: [authenticator.userId, authenticator.credentialID],
+//     }),
+//   }),
+// );
+
+// ========== Our Actual Schema ====================
+
+// a table for user sites they want to deploy
+export const sites = createTable("site", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description"),
+  repository: text("repository"),
+  type: text("type").notNull().$type<"static" | "server">(),
+  activeDeploymentId: text("active_deployment_id"),
+  environmentVariables: text("environment_variables"), // Current/latest environment variables for the site
+  createdAt: timestamp("created_at", { mode: "date" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: timestamp("updated_at", { mode: "date" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const sitesRelations = relations(sites, ({ many }) => ({
+  subdomains: many(siteSubdomains),
+  deployments: many(deployments),
+}));
+
+// a table that links a site to its subdomains - directly linked to the site because there will be only one active deployment on these subdomains at a time
+export const siteSubdomains = createTable("site_subdomain", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  siteId: text("siteId")
+    .notNull()
+    .references(() => sites.id, { onDelete: "cascade" }),
+
+  subdomain: text("subdomain").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { mode: "date" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const siteSubdomainsRelations = relations(siteSubdomains, ({ one }) => ({
+  site: one(sites, {
+    fields: [siteSubdomains.siteId],
+    references: [sites.id],
   }),
-);
+}));
+
+// table for deployments
+export const deployments = createTable("deployment", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  siteId: text("siteId")
+    .notNull()
+    .references(() => sites.id, { onDelete: "cascade" }),
+  status: text("status")
+    .notNull()
+    .$type<"QUEUED" | "BUILDING" | "FAILED" | "SUCCEEDED">()
+    .default("QUEUED"),
+  commitHash: text("commit_hash"),
+  branch: text("branch"),
+  buildLogs: text("build_logs"),
+  environmentVariables: text("environment_variables"), // Snapshot of environment variables at deployment time
+  deploymentUrl: text("deployment_url"),
+  createdAt: timestamp("created_at", { mode: "date" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  startedAt: timestamp("started_at", { mode: "date" }),
+  completedAt: timestamp("completed_at", { mode: "date" }),
+});
+
+export const deploymentsRelations = relations(deployments, ({ one }) => ({
+  site: one(sites, {
+    fields: [deployments.siteId],
+    references: [sites.id],
+  }),
+}));
