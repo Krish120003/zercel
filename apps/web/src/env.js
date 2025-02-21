@@ -12,18 +12,21 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
 
+    GITHUB_ID: z.string(),
+    GITHUB_SECRET: z.string(),
+
     GOOGLE_CLOUD_PROJECT: z.string(),
-    // Removed Cloud Tasks variables
-    // GOOGLE_CLOUD_TASKS_LOCATION: z.string(),
-    // GOOGLE_CLOUD_TASKS_QUEUE: z.string(),
 
     // Added Builder Job details for triggering backend actions
     BUILDER_JOB_LOCATION: z.string(),
     BUILDER_JOB_NAME: z.string(),
-
     BUILD_BUCKET: z.string(),
-
     GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+
+    // NextAuth
+
+    NEXTAUTH_URL: z.string(),
+    NEXTAUTH_SECRET: z.string(),
   },
 
   /**
@@ -43,6 +46,9 @@ export const env = createEnv({
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
 
+    GITHUB_ID: process.env.GITHUB_ID,
+    GITHUB_SECRET: process.env.GITHUB_SECRET,
+
     GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
     // Removed Cloud Tasks environment variables
     // GOOGLE_CLOUD_TASKS_LOCATION: process.env.GOOGLE_CLOUD_TASKS_LOCATION,
@@ -51,7 +57,11 @@ export const env = createEnv({
     BUILDER_JOB_LOCATION: process.env.BUILDER_JOB_LOCATION,
     BUILDER_JOB_NAME: process.env.BUILDER_JOB_NAME,
 
+    BUILD_BUCKET: process.env.BUILD_BUCKET,
     GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

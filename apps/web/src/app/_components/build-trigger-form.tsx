@@ -1,4 +1,5 @@
 "use client";
+import { signIn } from "next-auth/react";
 import type { FormEvent } from "react";
 import { z } from "zod";
 
@@ -40,24 +41,34 @@ export const BuildTriggerForm = () => {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex w-full max-w-xl flex-col gap-4"
-    >
-      <input
-        type="url"
-        name="github_repo_url"
-        placeholder="https://github.com/username/repo"
-        className="w-full rounded-lg p-2 text-black"
-        pattern="https://github\.com/.*"
-        required
-      />
+    <>
       <button
-        type="submit"
-        className="rounded bg-purple-500 px-4 py-2 font-bold text-white hover:bg-purple-600"
+        className="rounded-lg bg-neutral-900 px-4 py-2"
+        onClick={() => {
+          signIn();
+        }}
       >
-        Trigger Build
+        Sign In
       </button>
-    </form>
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-full max-w-xl flex-col gap-4"
+      >
+        <input
+          type="url"
+          name="github_repo_url"
+          placeholder="https://github.com/username/repo"
+          className="w-full rounded-lg p-2 text-black"
+          pattern="https://github\.com/.*"
+          required
+        />
+        <button
+          type="submit"
+          className="rounded bg-purple-500 px-4 py-2 font-bold text-white hover:bg-purple-600"
+        >
+          Trigger Build
+        </button>
+      </form>
+    </>
   );
 };
