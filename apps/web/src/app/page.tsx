@@ -19,7 +19,7 @@ export default async function Home() {
   return (
     <HydrateClient>
       <Nav />
-      <main className="flex min-h-screen flex-col items-center justify-center text-white">
+      <main className="flex min-h-screen flex-col items-center justify-center">
         <div className="flex w-full max-w-3xl flex-col items-center gap-4">
           <h2 className="text-2xl font-bold">Trigger New Build</h2>
           <BuildTriggerForm />

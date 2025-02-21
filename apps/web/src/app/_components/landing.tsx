@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "~/components/ui/button";
 import AuthButton from "./auth-button";
 import { auth } from "~/server/auth";
+import { ModeToggle } from "~/components/theme-toggle";
 
 export function Logo({ className = "h-6 w-6" }: { className?: string }) {
   return (
@@ -20,36 +21,24 @@ export async function Nav() {
   const session = await auth();
 
   return (
-    <nav className="border-b border-gray-800 bg-black">
+    <nav className="border-border bg-background border-b">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <Logo className="h-5 w-5 text-white" />
-              <span className="text-lg font-bold text-white">Zercel</span>
+              <Logo className="text-foreground h-5 w-5" />
+              <span className="text-foreground text-lg font-bold">Zercel</span>
             </Link>
             <div className="hidden items-center gap-6 md:flex">
-              {/* <Link href="#" className="text-sm text-gray-400 hover:text-white">
+              {/* <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
                 Products
-              </Link>
-              <Link href="#" className="text-sm text-gray-400 hover:text-white">
-                Solutions
-              </Link>
-              <Link href="#" className="text-sm text-gray-400 hover:text-white">
-                Resources
-              </Link>
-              <Link href="#" className="text-sm text-gray-400 hover:text-white">
-                Docs
-              </Link>
-              <Link href="#" className="text-sm text-gray-400 hover:text-white">
-                Pricing
               </Link> */}
             </div>
           </div>
           <div className="flex items-center gap-4">
             <Button
               variant="link"
-              className="text-sm text-gray-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground text-sm"
             >
               Learn More
             </Button>
@@ -107,14 +96,14 @@ export function LandingPage() {
   return (
     <>
       <Nav />
-      <main className="relative flex-1 overflow-hidden bg-black pb-32">
+      <main className="bg-background relative flex-1 overflow-hidden pb-32">
         <div className="container mx-auto px-4 py-24">
           <div className="flex flex-col items-center gap-12 text-center">
             <div className="max-w-4xl space-y-6">
-              <h1 className="text-balance text-4xl font-bold tracking-tight text-white md:text-6xl lg:text-7xl">
+              <h1 className="text-foreground text-balance text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
                 Your incomplete platform for the web.
               </h1>
-              <p className="mx-auto max-w-2xl text-lg text-gray-400 md:text-xl">
+              <p className="text-muted-foreground mx-auto max-w-2xl text-lg md:text-xl">
                 Zercel provides the developer tools and cloud infrastructure to
                 build, scale, and secure more shitposts on the web.
               </p>
@@ -123,7 +112,7 @@ export function LandingPage() {
             <div className="flex gap-4">
               <Button
                 size="lg"
-                className="bg-white text-black hover:bg-gray-100"
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Ship Now <span aria-hidden="true">→</span>
               </Button>
@@ -143,17 +132,20 @@ export function LandingPage() {
 
 function Footer() {
   return (
-    <footer className="border-t border-gray-800 bg-black text-white">
+    <footer className="border-border bg-background border-t">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-muted-foreground text-sm">
             2025 Zercel. No rights reserved.
           </p>
-          <div className="flex text-sm text-gray-500">
-            A (functional and scaleable) parody by&nbsp;
-            <Link href="https://krish.gg" className="">
-              Krish
-            </Link>
+          <div className="text-muted-foreground flex items-center gap-4 text-sm">
+            <div>
+              A (functional and scaleable) parody by&nbsp;
+              <Link href="https://krish.gg" className="hover:text-foreground">
+                Krish
+              </Link>
+            </div>
+            <ModeToggle />
           </div>
         </div>
       </div>

@@ -21,7 +21,7 @@ export default function RootLayout({
       className={`${GeistSans.variable}`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-screen flex-col bg-black">
+      <body className="bg-background flex min-h-screen flex-col">
         <TRPCReactProvider>
           <ThemeProvider
             attribute="class"

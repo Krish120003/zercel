@@ -1,5 +1,5 @@
 "use client";
-import { signIn } from "next-auth/react";
+
 import type { FormEvent } from "react";
 import { z } from "zod";
 
@@ -42,14 +42,6 @@ export const BuildTriggerForm = () => {
 
   return (
     <>
-      <button
-        className="rounded-lg bg-neutral-900 px-4 py-2"
-        onClick={() => {
-          signIn();
-        }}
-      >
-        Sign In
-      </button>
       <form
         onSubmit={handleSubmit}
         className="flex w-full max-w-xl flex-col gap-4"
