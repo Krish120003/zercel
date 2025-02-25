@@ -8,6 +8,7 @@
   "dependencies": {
     "@hono/node-server": "^1.13.8",
     "hono": "^4.7.2",
+    "ioredis": "^5.5.0",
     "mime-types": "^2.1.35"
   },
   "devDependencies": {

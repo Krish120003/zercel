@@ -87,6 +87,17 @@ export const sitesRouter = createTRPCRouter({
         })
         .returning();
 
+      // create a subdomain
+      const subdomain = await ctx.db
+        .insert(siteSubdomains)
+        .values({
+          siteId: site[0]!.id,
+          subdomain: input.name,
+        })
+        .returning();
+
+      await ctx.redis.set(`sha:${subdomain[0]!.subdomain}`, commitHash);
+
       // TODO: Create a deployment for the site (DO THIS LATER DONT DO IT RN)
 
       const deployment = await ctx.db

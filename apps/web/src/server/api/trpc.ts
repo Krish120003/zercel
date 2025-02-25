@@ -13,6 +13,7 @@ import { ZodError } from "zod";
 import { db } from "~/server/db";
 import { auth } from "~/server/auth";
 import { githubApp } from "../github";
+import { redis } from "~/server/redis";
 
 /**
  * 1. CONTEXT
@@ -30,6 +31,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth();
   return {
     db,
+    redis,
     session,
     githubApp,
     ...opts,

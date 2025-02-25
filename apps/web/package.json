@@ -43,6 +43,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.33.0",
     "geist": "^1.3.0",
+    "ioredis": "^5.5.0",
     "lucide-react": "^0.475.0",
     "next": "^15.0.1",
     "next-auth": "5.0.0-beta.25",

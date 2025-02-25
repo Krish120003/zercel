@@ -1,23 +1,32 @@
 import { Hono } from "hono";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { join } from "path";
 import { serve } from "@hono/node-server";
 import { promises as fs } from "fs";
 import { lookup } from "mime-types";
+import { Redis } from "ioredis";
 
+const REDIS_URL = process.env.REDIS_URL || "";
+
+const client = new Redis(REDIS_URL);
 const app = new Hono();
 
 app.use("*", async (c, next) => {
   const host = c.req.header("host");
-  const subdomain = host?.split(".")[0];
+  let subdomain = host?.split(".")[0];
 
   if (!subdomain) {
     return c.text("Invalid subdomain", 404);
   }
 
+  const sha = await client.get(`sha:${subdomain}`);
+
+  if (!sha) {
+    return c.text("Not found", 404);
+  }
+
   // Get the path or default to index.html
   const path = c.req.path === "/" ? "index.html" : c.req.path.slice(1);
-  const filePath = join("/data", subdomain, path);
+  const filePath = join("/data", sha, path);
 
   // Serve static files from the mounted volume
   try {

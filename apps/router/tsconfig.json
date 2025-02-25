@@ -4,10 +4,12 @@
     "module": "NodeNext",
     "strict": true,
     "verbatimModuleSyntax": true,
+
     "skipLibCheck": true,
     "types": [
       "node"
     ],
+    "esModuleInterop": true,
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
     "outDir": "./dist",

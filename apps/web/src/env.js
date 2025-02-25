@@ -28,6 +28,10 @@ export const env = createEnv({
 
     NEXTAUTH_URL: z.string(),
     NEXTAUTH_SECRET: z.string(),
+
+    // Redis
+
+    REDIS_URL: z.string(),
   },
 
   /**
@@ -65,6 +69,8 @@ export const env = createEnv({
 
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+
+    REDIS_URL: process.env.REDIS_URL,
 
     // === Client ===
     NEXT_PUBLIC_GITHUB_APP_URL: process.env.NEXT_PUBLIC_GITHUB_APP_URL,
