@@ -1,6 +1,7 @@
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
+import { experimental_taintUniqueValue } from "react";
 import { env } from "~/env";
 
 import { db } from "~/server/db";
@@ -23,6 +24,7 @@ declare module "next-auth" {
       id: string;
       // ...other properties
       // role: UserRole;
+      accessToken?: string;
     } & DefaultSession["user"];
   }
 
@@ -42,6 +44,7 @@ export const authConfig = {
     GitHubProvider({
       clientId: env.GITHUB_ID,
       clientSecret: env.GITHUB_SECRET,
+      authorization: { params: { scope: "repo" } },
     }),
   ],
   adapter: DrizzleAdapter(db, {
@@ -51,12 +54,29 @@ export const authConfig = {
     verificationTokensTable: verificationTokens,
   }),
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    session: async ({ session, user, token }) => {
+      // Get the user's GitHub account
+      const githubAccount = await db.query.accounts.findFirst({
+        where: (accounts, { eq, and }) =>
+          and(eq(accounts.userId, user.id), eq(accounts.provider, "github")),
+      });
+
+      if (githubAccount && githubAccount.access_token) {
+        experimental_taintUniqueValue(
+          "Never pass access tokens to the client",
+          githubAccount,
+          githubAccount.access_token,
+        );
+      }
+
+      return {
+        ...session,
+        user: {
+          accessToken: githubAccount?.access_token,
+          ...session.user,
+          id: user.id,
+        },
+      };
+    },
   },
 } satisfies NextAuthConfig;

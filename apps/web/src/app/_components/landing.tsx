@@ -3,6 +3,7 @@ import { Button } from "~/components/ui/button";
 import AuthButton from "./auth-button";
 import { auth } from "~/server/auth";
 import { ModeToggle } from "~/components/theme-toggle";
+import { cn } from "~/lib/utils";
 
 export function Logo({ className = "h-6 w-6" }: { className?: string }) {
   return (
@@ -21,13 +22,19 @@ export async function Nav() {
   const session = await auth();
 
   return (
-    <nav className="border-border bg-background border-b">
-      <div className="container mx-auto px-4">
+    <nav className="bg-background">
+      <div className="mx-auto px-8 pt-2">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <Logo className="text-foreground h-5 w-5" />
-              <span className="text-foreground text-lg font-bold">Zercel</span>
+              <Logo className="h-5 w-5 text-foreground" />
+              <span
+                className={cn("text-lg font-bold text-foreground", {
+                  hidden: session !== null,
+                })}
+              >
+                Zercel
+              </span>
             </Link>
             <div className="hidden items-center gap-6 md:flex">
               {/* <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
@@ -38,7 +45,7 @@ export async function Nav() {
           <div className="flex items-center gap-4">
             <Button
               variant="link"
-              className="text-muted-foreground hover:text-foreground text-sm"
+              className="text-sm text-muted-foreground hover:text-foreground"
             >
               Learn More
             </Button>
@@ -96,28 +103,28 @@ export function LandingPage() {
   return (
     <>
       <Nav />
-      <main className="bg-background relative flex-1 overflow-hidden pb-32">
+      <main className="relative flex-1 overflow-hidden bg-background pb-32">
         {/* Hero Graphic */}
         <HeroGraphic />
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col items-center gap-12 text-center">
             <div className="max-w-4xl space-y-6">
-              <h1 className="text-foreground text-balance text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl">
+              <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl">
                 Your incomplete platform for the web.
               </h1>
-              <p className="text-muted-foreground mx-auto max-w-2xl text-balance text-lg md:text-xl">
+              <p className="mx-auto max-w-2xl text-balance text-lg text-muted-foreground md:text-xl">
                 Zercel provides the developer tools and cloud infrastructure to
-                build, scale, and secure more shitposts on the web.
+                build, scale, and secure more on the web.
               </p>
             </div>
 
             <div className="flex gap-4">
-              <Button
+              <AuthButton
                 size="lg"
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 Ship Now <span aria-hidden="true">→</span>
-              </Button>
+              </AuthButton>
             </div>
           </div>
         </div>
@@ -131,13 +138,13 @@ export function LandingPage() {
 
 function Footer() {
   return (
-    <footer className="border-border bg-background border-t">
+    <footer className="border-t border-border bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             2025 Zercel. No rights reserved.
           </p>
-          <div className="text-muted-foreground flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div>
               A (functional and scaleable) parody by&nbsp;
               <Link href="https://krish.gg" className="hover:text-foreground">

@@ -14,6 +14,7 @@ export const env = createEnv({
 
     GITHUB_ID: z.string(),
     GITHUB_SECRET: z.string(),
+    GITHUB_PRIVATE_KEY: z.string(),
 
     GOOGLE_CLOUD_PROJECT: z.string(),
 
@@ -36,6 +37,7 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_GITHUB_APP_URL: z.string().url(),
   },
 
   /**
@@ -48,6 +50,7 @@ export const env = createEnv({
 
     GITHUB_ID: process.env.GITHUB_ID,
     GITHUB_SECRET: process.env.GITHUB_SECRET,
+    GITHUB_PRIVATE_KEY: process.env.GITHUB_PRIVATE_KEY,
 
     GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
     // Removed Cloud Tasks environment variables
@@ -62,6 +65,9 @@ export const env = createEnv({
 
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+
+    // === Client ===
+    NEXT_PUBLIC_GITHUB_APP_URL: process.env.NEXT_PUBLIC_GITHUB_APP_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
