@@ -2,6 +2,8 @@
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
+set -x
+
 
 # Check if the 'REPO_URL' environment variable is set.
 if [ -z "$REPO_URL" ]; then
@@ -9,13 +11,21 @@ if [ -z "$REPO_URL" ]; then
     exit 1
 fi
 
+# Check if the 'REPO_SHA' environment variable is set.
+
 # Clone the repository using the URL provided in the 'REPO_URL' environment variable into a folder named clone
-git clone "$REPO_URL" clone
+git clone --depth 1 "$REPO_URL" clone
+# Change the working directory to the 'clone' folder
+cd clone
+
+# Checkout the commit SHA provided in the 'REPO_SHA' environment variable
+if [ -z "$REPO_SHA" ]; then
+  git checkout $REPO_SHA
+fi
 
 # TODO: Inject environment variables before the build
 
-# Change the working directory to the 'clone' folder
-cd clone
+
 
 # Set up FNM path and environment
 FNM_PATH="/root/.local/share/fnm"
@@ -49,7 +59,9 @@ fi
 # this is so we can have a unique folder for each build
 
 # Get the sha256 of the repo url
-REPO_SHA=$(echo -n "$REPO_URL" | sha256sum | cut -d ' ' -f 1)
+if [ -z "$REPO_SHA" ]; then
+  REPO_SHA=$(git rev-parse HEAD)
+fi
 
 
 echo "Cleaning workspace at /workspace/$REPO_SHA"
