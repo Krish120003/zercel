@@ -4,6 +4,7 @@ import { sites, siteSubdomains, deployments } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { env } from "process";
 import { Octokit } from "@octokit/rest";
+import { requestBuild } from "~/server/lib/build";
 
 const subdomainSchema = z
   .string()
@@ -39,33 +40,69 @@ export const sitesRouter = createTRPCRouter({
       const octokit = new Octokit({ auth: accessToken });
 
       // Check if the user owns the repository
-      const [owner, repo] = input.repository.split("/");
+      let repoDetails = undefined;
+      const [_owner, _repo] = input.repository.split("/");
+      const owner = _owner || "";
+      const repo = _repo || "";
       try {
-        const { data: repoDetails } = await octokit.rest.repos.get({
+        const { data } = await octokit.rest.repos.get({
           owner: owner || "",
           repo: repo || "",
         });
 
         // if data is null, the user doesn't have access to the repo
-        if (!repoDetails) {
+        if (!data) {
           throw new Error(
             "Repository not found or you don't have access to it.",
           );
         }
+
+        repoDetails = data;
       } catch (error) {
         console.error(error);
         throw new Error("Repository not found or you don't have access to it.");
       }
 
-      // Create an entry in the sites table
-      const site = await ctx.db.insert(sites).values({
-        name: input.name,
-        repository: input.repository,
-        type: input.type,
-        userId,
+      // repoDetails <--- i dont have access to this var cause its undefined, how do I fix?
+
+      const branchName = repoDetails.default_branch; // TODO: GET
+
+      // # get latesst commit of tihs branch
+      const branch = await octokit.rest.repos.getBranch({
+        owner: owner,
+        repo: repo,
+        branch: branchName,
       });
 
+      const commitHash = branch.data.commit.sha; // TODO: GET
+
+      // Create an entry in the sites table
+      const site = await ctx.db
+        .insert(sites)
+        .values({
+          name: input.name,
+          repository: input.repository,
+          type: input.type,
+          userId,
+        })
+        .returning();
+
       // TODO: Create a deployment for the site (DO THIS LATER DONT DO IT RN)
+
+      const deployment = await ctx.db
+        .insert(deployments)
+        .values({
+          siteId: site[0]!.id,
+          status: "QUEUED",
+          branch: branchName,
+          commitHash: commitHash,
+          buildLogs: null,
+        })
+        .returning();
+
+      console.log("Deployment row", deployment);
+
+      await requestBuild(repoDetails.html_url, commitHash);
 
       return site;
     }),
