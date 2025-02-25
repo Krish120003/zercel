@@ -61,4 +61,48 @@ export const githubRouter = createTRPCRouter({
 
       return repos;
     }),
+
+  getRepoDetailsByName: protectedProcedure
+    .input(
+      z.object({
+        owner: z.string(),
+        repo: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const accessToken = ctx.session.user.accessToken;
+      if (!accessToken) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message:
+            "No GitHub access token found. Please reconnect your GitHub account.",
+        });
+      }
+
+      const octokit = new Octokit({ auth: accessToken });
+
+      try {
+        const { data: repoDetails } = await octokit.rest.repos.get({
+          owner: input.owner,
+          repo: input.repo,
+        });
+
+        const { data: branches } = await octokit.rest.repos.listBranches({
+          owner: input.owner,
+          repo: input.repo,
+          per_page: 100,
+        });
+
+        return {
+          ...repoDetails,
+          branches: branches.map((branch) => branch.name),
+        };
+      } catch (error) {
+        console.error(error);
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Repository ${input.owner}/${input.repo} not found or you don't have access to it.`,
+        });
+      }
+    }),
 });

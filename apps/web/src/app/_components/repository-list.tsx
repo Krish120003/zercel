@@ -6,6 +6,7 @@ import { Button } from "~/components/ui/button";
 import { ArrowRight, Github, Globe, Lock, Search } from "lucide-react";
 import { env } from "~/env";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 
 interface RepositoryListProps {
   repos: GithubRepoData[];
@@ -58,8 +59,12 @@ export function RepositoryList({ repos }: RepositoryListProps) {
                 </span>
               </div>
             </div>
-            <Button variant="default" size="sm">
-              Import
+            <Button variant="default" size="sm" asChild>
+              <Link
+                href={`/deploy/?owner=${repo.owner.login}&repo=${repo.name}`}
+              >
+                Deploy
+              </Link>
             </Button>
           </div>
         ))}

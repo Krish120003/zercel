@@ -22,7 +22,7 @@ export async function Nav() {
   const session = await auth();
 
   return (
-    <nav className="bg-background">
+    <nav className="">
       <div className="mx-auto px-8 pt-2">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
@@ -128,15 +128,12 @@ export function LandingPage() {
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 w-full">
-          <Footer />
-        </div>
       </main>
     </>
   );
 }
 
-function Footer() {
+export function Footer() {
   return (
     <footer className="border-t border-border bg-background">
       <div className="container mx-auto px-4 py-8">

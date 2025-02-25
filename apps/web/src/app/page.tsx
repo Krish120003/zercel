@@ -1,5 +1,5 @@
 import { api, HydrateClient } from "~/trpc/server";
-import { LandingPage, Nav } from "./_components/landing";
+import { LandingPage, Nav, Footer } from "./_components/landing";
 import { auth } from "~/server/auth";
 import { RepositoryList } from "./_components/repository-list";
 
@@ -24,7 +24,7 @@ async function Deploy() {
         </p>
       </div>
 
-      <div className="w-full border-t-2 bg-neutral-50 p-8 dark:border-t-neutral-800 dark:bg-neutral-900">
+      <div className="min-h-[calc(80vh)] w-full border-t-2 bg-neutral-50 p-8 dark:border-t-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto overflow-hidden rounded-2xl border bg-background p-8 dark:border-neutral-800">
           <RepositoryList repos={repos} />
         </div>
@@ -40,6 +40,7 @@ export default async function Home() {
     return (
       <HydrateClient>
         <LandingPage />
+        <Footer />
       </HydrateClient>
     );
   }
@@ -50,6 +51,7 @@ export default async function Home() {
       <main className="min-h-screen">
         <Deploy />
       </main>
+      <Footer />
     </HydrateClient>
   );
 }
