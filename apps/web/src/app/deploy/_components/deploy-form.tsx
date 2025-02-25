@@ -21,6 +21,7 @@ import { Input } from "~/components/ui/input";
 import EnvVariableForm from "~/components/env-variable";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   name: z.string().min(1, "Site name is required"),
@@ -46,7 +47,13 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
     },
   });
 
-  const mutation = api.sites.create.useMutation();
+  const router = useRouter();
+
+  const mutation = api.sites.create.useMutation({
+    async onSuccess(data) {
+      await router.push(`/site?id=${data.id}`);
+    },
+  });
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     mutation.mutate({

@@ -115,6 +115,127 @@ export const sitesRouter = createTRPCRouter({
 
       await requestBuild(repoDetails.html_url, commitHash);
 
+      // link active deployment to site
+      await ctx.db
+        .update(sites)
+        .set({
+          activeDeploymentId: deployment[0]!.id,
+        })
+        .where(eq(sites.id, site[0]!.id))
+        .execute();
+
+      return site[0]!;
+    }),
+
+  get: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      const site = await ctx.db.query.sites.findFirst({
+        where: and(eq(sites.userId, userId), eq(sites.id, input.id)),
+        with: {
+          subdomains: true,
+          deployments: true,
+        },
+      });
+
       return site;
+    }),
+
+  addSubdomain: protectedProcedure
+    .input(
+      z.object({
+        siteId: z.string(),
+        subdomain: subdomainSchema,
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Verify site ownership
+      const site = await ctx.db.query.sites.findFirst({
+        where: and(eq(sites.userId, userId), eq(sites.id, input.siteId)),
+      });
+
+      if (!site) {
+        throw new Error("Site not found or you don't have access to it.");
+      }
+
+      // Check if subdomain already exists
+      const existingSubdomain = await ctx.db.query.siteSubdomains.findFirst({
+        where: eq(siteSubdomains.subdomain, input.subdomain),
+      });
+
+      if (existingSubdomain) {
+        throw new Error("Subdomain already exists.");
+      }
+
+      // Create new subdomain
+      const subdomain = await ctx.db
+        .insert(siteSubdomains)
+        .values({
+          siteId: input.siteId,
+          subdomain: input.subdomain,
+        })
+        .returning();
+
+      // setup redis to point to the commit hash of the active deployment
+      // site.activeDeploymentId
+
+      if (site.activeDeploymentId) {
+        const activeDeployment = await ctx.db.query.deployments.findFirst({
+          where: eq(deployments.id, site.activeDeploymentId),
+        });
+
+        if (activeDeployment) {
+          await ctx.redis.set(
+            `sha:${subdomain[0]!.subdomain}`,
+            activeDeployment.commitHash!,
+          );
+        }
+      }
+
+      return subdomain[0]!;
+    }),
+
+  removeSubdomain: protectedProcedure
+    .input(
+      z.object({
+        siteId: z.string(),
+        subdomain: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Verify site ownership
+      const site = await ctx.db.query.sites.findFirst({
+        where: and(eq(sites.userId, userId), eq(sites.id, input.siteId)),
+      });
+
+      if (!site) {
+        throw new Error("Site not found or you don't have access to it.");
+      }
+
+      // Delete subdomain
+      const deletedSubdomain = await ctx.db
+        .delete(siteSubdomains)
+        .where(
+          and(
+            eq(siteSubdomains.siteId, input.siteId),
+            eq(siteSubdomains.subdomain, input.subdomain),
+          ),
+        )
+        .returning();
+
+      if (!deletedSubdomain.length) {
+        throw new Error("Subdomain not found.");
+      }
+
+      // Remove from Redis if exists
+      await ctx.redis.del(`sha:${input.subdomain}`);
+
+      return deletedSubdomain[0]!;
     }),
 });
