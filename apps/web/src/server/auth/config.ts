@@ -61,7 +61,7 @@ export const authConfig = {
           and(eq(accounts.userId, user.id), eq(accounts.provider, "github")),
       });
 
-      if (githubAccount && githubAccount.access_token) {
+      if (githubAccount?.access_token) {
         experimental_taintUniqueValue(
           "Never pass access tokens to the client",
           githubAccount,

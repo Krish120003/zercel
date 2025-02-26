@@ -71,7 +71,7 @@ export function RepositoryList({ repos }: RepositoryListProps) {
       </div>
 
       <div className="w-fit text-muted-foreground">
-        Don't see a repository?{" "}
+        {"Don't see a repository? "}
         <Button
           asChild
           variant="link"

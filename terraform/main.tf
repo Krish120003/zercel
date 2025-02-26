@@ -83,15 +83,6 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         name  = "GOOGLE_CLOUD_PROJECT"
         value = "vercel-clone-1"
       }
-      # Commented out Cloud Tasks env variables
-      # env {
-      #   name  = "GOOGLE_CLOUD_TASKS_LOCATION"
-      #   value = google_cloud_tasks_queue.build_queue.location
-      # }
-      # env {
-      #   name  = "GOOGLE_CLOUD_TASKS_QUEUE"
-      #   value = google_cloud_tasks_queue.build_queue.name
-      # }
 
       # Added Builder Job details for triggering from the backend
       env {
@@ -102,6 +93,39 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         name  = "BUILDER_JOB_NAME"
         value = google_cloud_run_v2_job.builder.name
       }
+      env {
+        name  = "GITHUB_ID"
+        value = var.github_id
+      }
+      env {
+        name  = "GITHUB_SECRET"
+        value = var.github_secret
+      }
+      env {
+        name  = "GITHUB_PRIVATE_KEY"
+        value = var.github_private_key
+      }
+      env {
+        name  = "BUILD_BUCKET"
+        value = google_storage_bucket.builder_bucket.name
+      }
+      env {
+        name  = "NEXTAUTH_URL"
+        value = var.nextauth_url
+      }
+      env {
+        name  = "NEXTAUTH_SECRET"
+        value = var.nextauth_secret
+      }
+      env {
+        name  = "REDIS_URL"
+        value = var.redis_url
+      }
+      env {
+        name  = "NEXT_PUBLIC_GITHUB_APP_URL"
+        value = var.github_app_url
+      }
+
       # Commented out service account credentials configuration
       # env {
       #   name  = "GOOGLE_APPLICATION_CREDENTIALS"
@@ -247,6 +271,10 @@ resource "google_cloud_run_v2_service" "router" {
         name  = "GOOGLE_CLOUD_PROJECT"
         value = "vercel-clone-1"
       }
+      env {
+        name  = "REDIS_URL"
+        value = var.redis_url
+      }
     }
 
     # Auto-scaling configuration
@@ -302,6 +330,7 @@ resource "google_compute_url_map" "router_urlmap" {
     path_matcher = "path-matcher-1"
   }
 
+
   path_matcher {
     name            = "path-matcher-1"
     default_service = google_compute_backend_service.router_backend.id
@@ -311,6 +340,8 @@ resource "google_compute_url_map" "router_urlmap" {
       service = google_compute_backend_service.router_backend.id
     }
   }
+
+
 }
 
 # Create a target HTTPS proxy

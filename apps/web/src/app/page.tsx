@@ -19,8 +19,7 @@ async function Deploy() {
           </span>
         </h1>
         <p className="max-w-2xl opacity-60">
-          Connect your GitHub repository and we'll automatically build, deploy,
-          and scale your applications in seconds.
+          {`Connect your GitHub repository and we'll automatically build, deploy, and scale your applications in seconds.`}
         </p>
       </div>
 

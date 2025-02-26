@@ -17,7 +17,7 @@ export default function AuthButton({
       onClick={loggedIn ? () => signOut() : () => signIn("github")}
       {...props}
     >
-      {children || (loggedIn ? "Sign Out" : "Sign In")}
+      {children ?? (loggedIn ? "Sign Out" : "Sign In")}
     </Button>
   );
 }

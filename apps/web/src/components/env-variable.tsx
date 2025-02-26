@@ -24,7 +24,7 @@ interface EnvVariablesProps {
 
 export default function EnvVariables({ initalEnvVars }: EnvVariablesProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [envVars, setEnvVars] = useState<EnvVar[]>(initalEnvVars || []);
+  const [envVars, setEnvVars] = useState<EnvVar[]>(initalEnvVars ?? []);
 
   const parseEnvContent = useCallback((content: string) => {
     const lines = content.split("\n");

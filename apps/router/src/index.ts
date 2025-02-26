@@ -10,6 +10,30 @@ const REDIS_URL = process.env.REDIS_URL || "";
 const client = new Redis(REDIS_URL);
 const app = new Hono();
 
+// Cache interface
+interface CacheEntry {
+  value: string | null;
+  timestamp: number;
+}
+
+const shaCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 3000; // 3 seconds in milliseconds
+
+async function getSha(subdomain: string): Promise<string | null> {
+  const now = Date.now();
+  const cached = shaCache.get(subdomain);
+
+  if (cached && now - cached.timestamp < CACHE_TTL) {
+    return cached.value;
+  }
+
+  const sha = await client.get(`sha:${subdomain}`);
+  // Cache both successful and unsuccessful results
+  shaCache.set(subdomain, { value: sha || null, timestamp: now });
+
+  return sha;
+}
+
 app.use("*", async (c, next) => {
   const host = c.req.header("host");
   let subdomain = host?.split(".")[0];
@@ -18,7 +42,7 @@ app.use("*", async (c, next) => {
     return c.text("Invalid subdomain", 404);
   }
 
-  const sha = await client.get(`sha:${subdomain}`);
+  const sha = await getSha(subdomain);
 
   if (!sha) {
     return c.text("Not found", 404);

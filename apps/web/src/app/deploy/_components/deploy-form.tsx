@@ -51,7 +51,7 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
 
   const mutation = api.sites.create.useMutation({
     async onSuccess(data) {
-      await router.push(`/site?id=${data.id}`);
+      router.push(`/site?id=${data.id}`);
     },
   });
 

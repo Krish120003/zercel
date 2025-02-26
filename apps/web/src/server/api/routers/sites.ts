@@ -42,12 +42,12 @@ export const sitesRouter = createTRPCRouter({
       // Check if the user owns the repository
       let repoDetails = undefined;
       const [_owner, _repo] = input.repository.split("/");
-      const owner = _owner || "";
-      const repo = _repo || "";
+      const owner = _owner ?? "";
+      const repo = _repo ?? "";
       try {
         const { data } = await octokit.rest.repos.get({
-          owner: owner || "",
-          repo: repo || "",
+          owner: owner,
+          repo: repo,
         });
 
         // if data is null, the user doesn't have access to the repo

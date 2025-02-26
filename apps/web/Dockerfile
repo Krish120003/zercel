@@ -16,7 +16,8 @@ COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml\* ./
 #     else echo "Lockfile not found." && exit 1; \
 #     fi
 
-RUN npm i 
+RUN npm i -g pnpm
+RUN pnpm i 
 
 ##### BUILDER
 
@@ -36,7 +37,8 @@ ENV NEXT_TELEMETRY_DISABLED 1
 #     else echo "Lockfile not found." && exit 1; \
 #     fi
 
-RUN SKIP_ENV_VALIDATION=1 npm run build
+RUN npm i -g pnpm
+RUN SKIP_ENV_VALIDATION=1 pnpm run build
 
 ##### RUNNER
 

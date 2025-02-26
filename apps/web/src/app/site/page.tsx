@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const searchParamsAwaited = await searchParams;
   const siteId = searchParamsAwaited.id;
