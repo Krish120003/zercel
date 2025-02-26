@@ -307,6 +307,16 @@ resource "google_compute_region_network_endpoint_group" "router_neg" {
   }
 }
 
+# Create a serverless NEG for the Next.js app
+resource "google_compute_region_network_endpoint_group" "nextjs_neg" {
+  name                  = "z-nextjs-neg"
+  network_endpoint_type = "SERVERLESS"
+  region                = "us-east1"
+  cloud_run {
+    service = google_cloud_run_v2_service.nextjs_app.name
+  }
+}
+
 # Create a backend service with external managed load balancing
 resource "google_compute_backend_service" "router_backend" {
   name                  = "z-router-backend"
@@ -320,28 +330,58 @@ resource "google_compute_backend_service" "router_backend" {
   }
 }
 
+# Create a backend service for the Next.js app
+resource "google_compute_backend_service" "nextjs_backend" {
+  name                  = "z-nextjs-backend"
+  protocol              = "HTTPS"
+  port_name             = "http"
+  timeout_sec           = 30
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  backend {
+    group = google_compute_region_network_endpoint_group.nextjs_neg.id
+  }
+}
+
 # Create a URL Map
 resource "google_compute_url_map" "router_urlmap" {
   name            = "z-router-urlmap"
   default_service = google_compute_backend_service.router_backend.id
 
+  # Rule for root domain (zercel.dev)
   host_rule {
-    hosts        = ["*.zercel.dev"]
-    path_matcher = "path-matcher-1"
+    hosts        = ["zercel.dev"]
+    path_matcher = "root-domain-matcher"
+
   }
 
+  # Rule for subdomains (*.zercel.dev)
+  host_rule {
+    hosts        = ["*.zercel.dev"]
+    path_matcher = "subdomain-matcher"
+  }
 
+  # Path matcher for root domain - routes to Next.js app
   path_matcher {
-    name            = "path-matcher-1"
-    default_service = google_compute_backend_service.router_backend.id
+    name            = "root-domain-matcher"
+    default_service = google_compute_backend_service.nextjs_backend.id
 
     path_rule {
-      paths   = ["/"]
-      service = google_compute_backend_service.router_backend.id
+      paths   = ["/*"]
+      service = google_compute_backend_service.nextjs_backend.id
     }
   }
 
+  # Path matcher for subdomains - routes to router service
+  path_matcher {
+    name            = "subdomain-matcher"
+    default_service = google_compute_backend_service.router_backend.id
 
+    path_rule {
+      paths   = ["/*"]
+      service = google_compute_backend_service.router_backend.id
+    }
+  }
 }
 
 # Create a target HTTPS proxy
