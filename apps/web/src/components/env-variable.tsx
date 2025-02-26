@@ -114,7 +114,7 @@ export default function EnvVariables({ initalEnvVars }: EnvVariablesProps) {
 
   return (
     <div
-      className="w-full max-w-3xl rounded-lg border bg-white p-4"
+      className="w-full max-w-3xl rounded-lg border bg-background p-4"
       onPaste={handlePaste}
     >
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -129,8 +129,10 @@ export default function EnvVariables({ initalEnvVars }: EnvVariablesProps) {
             className="grid grid-cols-[1fr,1fr,auto] items-start gap-4"
             ref={animationRef}
           >
-            <div className="text-sm font-medium text-gray-600">Key</div>
-            <div className="text-sm font-medium text-gray-600">Value</div>
+            <div className="text-sm font-medium text-muted-foreground">Key</div>
+            <div className="text-sm font-medium text-muted-foreground">
+              Value
+            </div>
             <div className="w-10"></div>
             {envVars.map((envVar, index) => (
               <React.Fragment key={index}>
@@ -166,7 +168,7 @@ export default function EnvVariables({ initalEnvVars }: EnvVariablesProps) {
             <Plus className="h-4 w-4" />
             Add More
           </Button>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Paste an .env above to import multiple variables at once.
           </p>
         </CollapsibleContent>

@@ -122,8 +122,20 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
         value = var.redis_url
       }
       env {
-        name  = "NEXT_PUBLIC_GITHUB_APP_URL"
+        name  = "GITHUB_APP_URL"
         value = var.github_app_url
+      }
+      env {
+        name  = "GITHUB_WEBHOOK_SECRET"
+        value = var.github_webhook_secret
+      }
+      env {
+        name  = "BUILDER_CALLBACK_URL"
+        value = var.builder_callback_url
+      }
+      env {
+        name  = "SKIP_ENV_VALIDATION"
+        value = 1
       }
 
       # Commented out service account credentials configuration

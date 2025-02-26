@@ -15,6 +15,8 @@ export const env = createEnv({
     GITHUB_ID: z.string(),
     GITHUB_SECRET: z.string(),
     GITHUB_PRIVATE_KEY: z.string(),
+    GITHUB_APP_URL: z.string().url(),
+    GITHUB_WEBHOOK_SECRET: z.string(),
 
     GOOGLE_CLOUD_PROJECT: z.string(),
 
@@ -23,6 +25,11 @@ export const env = createEnv({
     BUILDER_JOB_NAME: z.string(),
     BUILD_BUCKET: z.string(),
     GOOGLE_APPLICATION_CREDENTIALS: z.string().optional(),
+
+    BUILDER_CALLBACK_URL: z
+      .string()
+      .url()
+      .default("https://zercel.dev/api/builder/callback"),
 
     // NextAuth
 
@@ -41,7 +48,7 @@ export const env = createEnv({
    */
   client: {
     // NEXT_PUBLIC_CLIENTVAR: z.string(),
-    NEXT_PUBLIC_GITHUB_APP_URL: z.string().url(),
+    // NEXT_PUBLIC_GITHUB_APP_URL: z.string().url(),
   },
 
   /**
@@ -55,6 +62,8 @@ export const env = createEnv({
     GITHUB_ID: process.env.GITHUB_ID,
     GITHUB_SECRET: process.env.GITHUB_SECRET,
     GITHUB_PRIVATE_KEY: process.env.GITHUB_PRIVATE_KEY,
+    GITHUB_APP_URL: process.env.GITHUB_APP_URL,
+    GITHUB_WEBHOOK_SECRET: process.env.GITHUB_WEBHOOK_SECRET,
 
     GOOGLE_CLOUD_PROJECT: process.env.GOOGLE_CLOUD_PROJECT,
     // Removed Cloud Tasks environment variables
@@ -63,8 +72,8 @@ export const env = createEnv({
 
     BUILDER_JOB_LOCATION: process.env.BUILDER_JOB_LOCATION,
     BUILDER_JOB_NAME: process.env.BUILDER_JOB_NAME,
-
     BUILD_BUCKET: process.env.BUILD_BUCKET,
+    BUILDER_CALLBACK_URL: process.env.BUILDER_CALLBACK_URL,
     GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
@@ -73,7 +82,7 @@ export const env = createEnv({
     REDIS_URL: process.env.REDIS_URL,
 
     // === Client ===
-    NEXT_PUBLIC_GITHUB_APP_URL: process.env.NEXT_PUBLIC_GITHUB_APP_URL,
+    // NEXT_PUBLIC_GITHUB_APP_URL: process.env.NEXT_PUBLIC_GITHUB_APP_URL,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

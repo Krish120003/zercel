@@ -55,3 +55,15 @@ variable "github_app_url" {
   description = "GitHub App URL"
   type        = string
 }
+
+variable "github_webhook_secret" {
+  description = "GitHub Webhook Secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "builder_callback_url" {
+  description = "Builder callback URL"
+  type        = string
+
+}

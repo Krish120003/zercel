@@ -178,6 +178,9 @@ export const deployments = createTable("deployment", {
     .$defaultFn(() => new Date()),
   startedAt: timestamp("started_at", { mode: "date" }),
   completedAt: timestamp("completed_at", { mode: "date" }),
+
+  // GCP Stuff
+  gcp_job_operation_name: text("gcp_job_operation_name"),
 });
 
 export const deploymentsRelations = relations(deployments, ({ one }) => ({

@@ -1,18 +1,18 @@
 "use client";
 import { Input } from "~/components/ui/input";
-import { GithubRepoData } from "~/server/api/routers/github";
+import type { GithubRepoData } from "~/server/api/routers/github";
 import { Button } from "~/components/ui/button";
 
-import { ArrowRight, Github, Globe, Lock, Search } from "lucide-react";
-import { env } from "~/env";
+import { ArrowRight, Globe, Lock, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
 interface RepositoryListProps {
   repos: GithubRepoData[];
+  appLink: string;
 }
 
-export function RepositoryList({ repos }: RepositoryListProps) {
+export function RepositoryList({ repos, appLink }: RepositoryListProps) {
   const [search, setSearch] = useState("");
 
   const filteredRepos = useMemo(() => {
@@ -77,7 +77,7 @@ export function RepositoryList({ repos }: RepositoryListProps) {
           variant="link"
           className="inline-flex gap-0 p-0 text-base text-blue-500 underline"
         >
-          <a href={env.NEXT_PUBLIC_GITHUB_APP_URL}>
+          <a href={appLink}>
             Reconfigure GitHub
             <ArrowRight className="-rotate-45" />
           </a>

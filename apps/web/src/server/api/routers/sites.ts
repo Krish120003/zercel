@@ -17,6 +17,19 @@ const envVarEntry = z.object({
   value: z.string(),
 });
 
+const siteListItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  repository: z.string(),
+  // type: z.enum(["static", "server"]),
+
+  branch: z.string(),
+  subdomainCount: z.number(),
+  topSubdomain: z.string(),
+});
+
+export type SiteListItem = z.infer<typeof siteListItemSchema>;
+
 export const sitesRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
@@ -92,7 +105,7 @@ export const sitesRouter = createTRPCRouter({
         .insert(siteSubdomains)
         .values({
           siteId: site[0]!.id,
-          subdomain: input.name,
+          subdomain: input.name + "-" + site[0]!.id.slice(0, 7),
         })
         .returning();
 
@@ -113,7 +126,18 @@ export const sitesRouter = createTRPCRouter({
 
       console.log("Deployment row", deployment);
 
-      await requestBuild(repoDetails.html_url, commitHash);
+      const execution = await requestBuild(
+        deployment[0]!.id,
+        repoDetails.html_url,
+        commitHash,
+      );
+
+      await ctx.db
+        .update(deployments)
+        .set({
+          gcp_job_operation_name: execution?.name,
+        })
+        .where(eq(deployments.id, deployment[0]!.id));
 
       // link active deployment to site
       await ctx.db
@@ -141,6 +165,35 @@ export const sitesRouter = createTRPCRouter({
       });
 
       return site;
+    }),
+
+  list: protectedProcedure
+    .output(siteListItemSchema.array())
+    .query(async ({ ctx }) => {
+      const userId = ctx.session.user.id;
+
+      const userSites = await ctx.db.query.sites.findMany({
+        where: eq(sites.userId, userId),
+        with: {
+          subdomains: true,
+          deployments: true,
+        },
+      });
+
+      const data = userSites.map((site) => {
+        const topSubdomain = site.subdomains[0]?.subdomain ?? "";
+        const subdomainCount = site.subdomains.length;
+        return {
+          id: site.id,
+          name: site.name,
+          repository: site.repository ?? "",
+          branch: site.deployments[0]?.branch ?? "",
+          topSubdomain,
+          subdomainCount,
+        };
+      });
+
+      return data;
     }),
 
   addSubdomain: protectedProcedure

@@ -2,6 +2,7 @@ import { Nav, Footer } from "../_components/landing";
 import { api, HydrateClient } from "~/trpc/server";
 import { redirect } from "next/navigation";
 import { SubdomainManager } from "./_components/subdomain-manager";
+import { auth, signIn } from "~/server/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,11 @@ export default async function Page({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const session = await auth();
+  if (!session) {
+    return redirect("/api/auth/signin");
+  }
+
   const searchParamsAwaited = await searchParams;
   const siteId = searchParamsAwaited.id;
 
