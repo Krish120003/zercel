@@ -6,8 +6,10 @@ import { SubdomainManager } from "./_components/subdomain-manager";
 import { auth } from "~/server/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
-import { ChevronLeft } from "lucide-react"; // Add this import for the icon
+import { ChevronLeft, ExternalLink } from "lucide-react"; // Add this import for the icon
 import { DeploymentItem } from "./_components/deployment-item";
+import { DeploymentList } from "./_components/deployment-list";
+import { SiGithub } from "@icons-pack/react-simple-icons";
 
 export default async function Page({
   searchParams,
@@ -31,11 +33,6 @@ export default async function Page({
   if (!siteData) {
     return redirect("/404");
   }
-
-  const deployments = siteData.deployments;
-  deployments.sort(({ createdAt }, { createdAt: createdAt2 }) => {
-    return new Date(createdAt2).getTime() - new Date(createdAt).getTime();
-  });
 
   return (
     <HydrateClient>
@@ -78,35 +75,58 @@ export default async function Page({
                     <CardHeader>
                       <CardTitle>Project Details</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p>
-                        <span className="font-semibold">Repository:</span>{" "}
-                        {siteData.repository}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Type:</span>{" "}
-                        {siteData.type}
-                      </p>
-                      {siteData.description && (
+                    <CardContent className="flex items-start justify-between">
+                      <div className="flex flex-col gap-1">
+                        <a
+                          className="flex items-center gap-2 hover:underline"
+                          href={`https://github.com/${siteData.repository}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <SiGithub className="h-4 w-4" />
+                          {siteData.repository}
+                        </a>
                         <p>
-                          <span className="font-semibold">Description:</span>{" "}
-                          {siteData.description}
+                          <span className="font-semibold">Type:</span>{" "}
+                          {siteData.type}
                         </p>
-                      )}
+                      </div>
+                      <div>
+                        {siteData.subdomains &&
+                        siteData.subdomains.length > 0 ? (
+                          <div className="flex flex-col justify-end gap-1">
+                            {siteData.subdomains
+                              .slice(0, 4)
+                              .map((subdomain, index) => (
+                                <a
+                                  key={index}
+                                  href={`https://${subdomain.subdomain}.zercel.dev`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex cursor-pointer items-center justify-end gap-2 rounded-md text-muted-foreground hover:underline"
+                                >
+                                  {subdomain.subdomain}
+                                  <ExternalLink className="h-4 w-4" />
+                                </a>
+                              ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            No domains configured
+                          </p>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
 
                   <div className="space-y-4">
                     <h3 className="text-xl font-medium">Deployments</h3>
-                    <div className="grid gap-3">
-                      {deployments.map((deployment) => (
-                        <DeploymentItem
-                          key={deployment.id}
-                          deployment={deployment}
-                        />
-                      ))}
-                    </div>
+                    <DeploymentList
+                      siteId={siteId}
+                      initialSiteData={siteData}
+                    />
                   </div>
+                  <div>Environtment Variables are not currently supported.</div>
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-4">
