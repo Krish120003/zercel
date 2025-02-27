@@ -47,7 +47,9 @@ export async function POST(request: NextRequest) {
 
   if (parsedBody.status !== "started") {
     // lets wait about 10 seconds before we check the status
-    await job?.promise();
+    try {
+      await job?.promise();
+    } catch (_) {}
   }
 
   if (!job?.done) {
