@@ -44,7 +44,7 @@ webhooks.on("push", async (event) => {
         })
         .returning();
 
-      const execution = await requestBuild(
+      const [execution, operation] = await requestBuild(
         deployment[0]!.id,
         event.payload.repository.html_url,
         event.payload.after,
@@ -54,11 +54,12 @@ webhooks.on("push", async (event) => {
       await db
         .update(deployments)
         .set({
-          gcp_job_operation_name: execution?.name,
+          gcp_job_operation_name: operation,
+          gcp_job_execution_name: execution,
         })
         .where(eq(deployments.id, deployment[0]!.id));
 
-      console.log(execution?.name);
+      console.log(execution, operation);
       console.log("Deployment row", deployment);
     }
   }

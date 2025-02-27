@@ -183,6 +183,7 @@ export const deployments = createTable("deployment", {
 
   // GCP Stuff
   gcp_job_operation_name: text("gcp_job_operation_name"),
+  gcp_job_execution_name: text("gcp_job_execution_name"),
 });
 
 export const deploymentsRelations = relations(deployments, ({ one }) => ({

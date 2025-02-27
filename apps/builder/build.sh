@@ -14,7 +14,7 @@ send_callback() {
     
     if [ ! -z "$CALLBACK_URL" ]; then
         # Add timeout and more verbose output
-        curl --max-time 10 -v -X POST "$CALLBACK_URL" \
+        curl --max-time 1 -X POST "$CALLBACK_URL" \
             -H "Content-Type: application/json" \
             -d "{\"status\":\"$status\",\"exit_code\":$exit_code}" || {
             echo "Warning: Callback failed to send, but continuing..."
@@ -30,7 +30,7 @@ send_initial_callback() {
     if [ ! -z "$CALLBACK_URL" ]; then
         curl -X POST "$CALLBACK_URL" \
             -H "Content-Type: application/json" \
-            -d "{\"status\":\"started\",\"exit_code\":0}"
+            -d "{\"status\":\"started\",\"exit_code\":0}\n"
     fi
 }
 

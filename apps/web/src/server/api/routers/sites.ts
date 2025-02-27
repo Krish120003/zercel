@@ -4,7 +4,9 @@ import { sites, siteSubdomains, deployments } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { env } from "process";
 import { Octokit } from "@octokit/rest";
-import { requestBuild } from "~/server/lib/build";
+import { getJobLogs, requestBuild } from "~/server/lib/build";
+import { TRPCError } from "@trpc/server";
+import { parse } from "path";
 
 const subdomainSchema = z
   .string()
@@ -29,6 +31,15 @@ const siteListItemSchema = z.object({
 });
 
 export type SiteListItem = z.infer<typeof siteListItemSchema>;
+
+const logSchema = z
+  .object({
+    timestamp: z.string(),
+    message: z.string(),
+  })
+  .array();
+
+export type Logs = z.infer<typeof logSchema>;
 
 export const sitesRouter = createTRPCRouter({
   create: protectedProcedure
@@ -126,7 +137,7 @@ export const sitesRouter = createTRPCRouter({
 
       console.log("Deployment row", deployment);
 
-      const execution = await requestBuild(
+      const [execution, operation] = await requestBuild(
         deployment[0]!.id,
         repoDetails.html_url,
         commitHash,
@@ -135,7 +146,8 @@ export const sitesRouter = createTRPCRouter({
       await ctx.db
         .update(deployments)
         .set({
-          gcp_job_operation_name: execution?.name,
+          gcp_job_operation_name: operation,
+          gcp_job_execution_name: execution,
         })
         .where(eq(deployments.id, deployment[0]!.id));
 
@@ -194,6 +206,110 @@ export const sitesRouter = createTRPCRouter({
       });
 
       return data;
+    }),
+
+  getDeploymentLogs: protectedProcedure
+    .input(
+      z.object({
+        deploymentId: z.string(),
+      }),
+    )
+    .output(logSchema)
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // get user's sites
+      const site = await ctx.db.query.sites.findMany({
+        where: and(eq(sites.userId, userId)),
+        with: {
+          deployments: true,
+        },
+      });
+
+      const userDeployments = site.flatMap((site) => site.deployments);
+
+      // get the deployment
+      const deployment = userDeployments.find(
+        (deployment) => deployment.id === input.deploymentId,
+      );
+
+      if (!deployment?.gcp_job_execution_name) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Deployment not found.",
+        });
+      }
+
+      const isDeploymentDone = deployment.status === "SUCCEEDED";
+
+      if (isDeploymentDone && deployment.buildLogs) {
+        console.log("Serving logs from cache for deployment", deployment.id);
+        return logSchema.parse(JSON.parse(deployment.buildLogs));
+      }
+
+      // we need to fetch them from the GCP logs
+      const [logs] = await getJobLogs(deployment.gcp_job_execution_name);
+
+      const dataUnsorted: {
+        timestamp: Date;
+        message: string;
+      }[] = [];
+
+      logs.forEach((log) => {
+        const safeParseMessage = z.string().safeParse(log.data);
+        if (
+          safeParseMessage.success &&
+          !safeParseMessage.data.includes("GCS")
+        ) {
+          let parsedTimestamp: Date | null = null;
+          if (log.metadata.timestamp?.valueOf()) {
+            const temp = log.metadata.timestamp;
+
+            if (typeof temp === "string") {
+              parsedTimestamp = new Date(temp);
+            } else if (typeof temp === "object") {
+              // check if its a date object
+              if (temp instanceof Date) {
+                parsedTimestamp = temp;
+              } else if (temp instanceof Object && temp.nanos) {
+                parsedTimestamp = new Date(temp.nanos);
+              }
+            } else if (typeof temp === "number") {
+              parsedTimestamp = new Date(temp);
+            }
+
+            if (parsedTimestamp) {
+              dataUnsorted.push({
+                timestamp: parsedTimestamp,
+                message: safeParseMessage.data,
+              });
+            }
+          }
+        }
+      });
+
+      dataUnsorted.sort((a, b) => {
+        return a.timestamp.getTime() - b.timestamp.getTime();
+      });
+
+      const dataSorted: Logs = dataUnsorted.map((log) => {
+        return {
+          timestamp: log.timestamp.toISOString(),
+          message: log.message,
+        };
+      });
+
+      // cache them if isDeploymentDone
+      if (isDeploymentDone) {
+        await ctx.db
+          .update(deployments)
+          .set({
+            buildLogs: JSON.stringify(dataSorted),
+          })
+          .where(eq(deployments.id, input.deploymentId));
+      }
+
+      return dataSorted;
     }),
 
   addSubdomain: protectedProcedure

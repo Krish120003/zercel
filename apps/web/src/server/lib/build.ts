@@ -1,9 +1,14 @@
-import { JobsClient } from "@google-cloud/run";
+import { JobsClient, ExecutionsClient } from "@google-cloud/run";
+import { Logging } from "@google-cloud/logging";
 import { env } from "~/env";
 
 const jobsClient = new JobsClient({
   apiEndpoint: "us-east1-run.googleapis.com", // <- Google whyyyyyyyyyy
 });
+
+const executionsClient = new ExecutionsClient();
+
+const logging = new Logging();
 
 export async function requestBuild(
   deployment_id: string,
@@ -46,10 +51,11 @@ export async function requestBuild(
     });
 
     console.log("Job submitted", operation?.name);
-    return operation;
+    return [execution.metadata?.name, operation?.name];
   } catch (error) {
     console.error("Error submitting job:", error);
   }
+  return [null, null];
 }
 
 export async function getJobStatus(operationName: string) {
@@ -60,4 +66,18 @@ export async function getJobStatus(operationName: string) {
     console.error("Error fetching job status:", error);
     throw error;
   }
+}
+
+export async function getJobLogs(exeutionName: string) {
+  const execution = await executionsClient.getExecution({
+    name: exeutionName,
+  });
+
+  const filterName = execution[0].name?.split("/").pop();
+
+  const entries = await logging.getEntries({
+    filter: `${filterName}`,
+  });
+
+  return entries;
 }

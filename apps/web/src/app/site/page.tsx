@@ -6,9 +6,8 @@ import { SubdomainManager } from "./_components/subdomain-manager";
 import { auth } from "~/server/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
-import { ChevronLeft, GitBranch } from "lucide-react"; // Add this import for the icon
-import { Badge } from "~/components/ui/badge"; // Add this import
-import { AlertCircle, CheckCircle2, Clock, GitCommit } from "lucide-react"; // Add these imports
+import { ChevronLeft } from "lucide-react"; // Add this import for the icon
+import { DeploymentItem } from "./_components/deployment-item";
 
 export default async function Page({
   searchParams,
@@ -34,8 +33,8 @@ export default async function Page({
   }
 
   const deployments = siteData.deployments;
-  deployments.sort((a: any, b: any) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  deployments.sort(({ createdAt }, { createdAt: createdAt2 }) => {
+    return new Date(createdAt2).getTime() - new Date(createdAt).getTime();
   });
 
   return (
@@ -132,86 +131,3 @@ export default async function Page({
     </HydrateClient>
   );
 }
-
-// Add this helper function before the component
-const getStatusBadge = (status: string) => {
-  const statusMap = {
-    SUCCEEDED: {
-      color: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
-      icon: CheckCircle2,
-    },
-    FAILED: {
-      color: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
-      icon: AlertCircle,
-    },
-    BUILDING: {
-      color: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
-      icon: Clock,
-    },
-    QUEUED: {
-      color: "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20",
-      icon: Clock,
-    },
-  };
-
-  const defaultStatus = {
-    color: "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20",
-    icon: Clock,
-  };
-
-  return statusMap[status as keyof typeof statusMap] || defaultStatus;
-};
-
-// Add this interface above the DeploymentItem component
-interface Deployment {
-  id: string;
-  status: "SUCCEEDED" | "FAILED" | "BUILDING" | "QUEUED";
-  branch: string;
-
-  createdAt: string;
-  commitHash: string;
-}
-
-// First, create a DeploymentItem component for better organization
-const DeploymentItem = ({ deployment }: { deployment: Deployment }) => {
-  const { color, icon: StatusIcon } = getStatusBadge(deployment.status);
-  return (
-    <div className="flex items-center justify-between rounded-lg border bg-background p-4 transition-all hover:shadow-md">
-      <div className="flex w-full items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h3 className="font-medium">
-            Deployment {deployment.id.slice(0, 8)}
-          </h3>
-          <a
-            // href={deployment.repoUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex cursor-pointer items-center text-sm text-muted-foreground hover:underline"
-          >
-            <GitBranch className="mr-2 h-4 w-4" />
-            <span>{deployment.branch}</span>
-          </a>
-          <Badge className={`${color} flex items-center gap-1 capitalize`}>
-            <StatusIcon className="h-3 w-3" />
-            {deployment.status.toLowerCase()}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center">
-            <Clock className="mr-2 h-4 w-4" />
-            {new Date(deployment.createdAt).toLocaleString()}
-          </div>
-          <div className="flex items-center">
-            <GitCommit className="mr-2 h-4 w-4" />
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
-              {deployment.commitHash.slice(0, 7)}
-            </code>
-          </div>
-        </div>
-        {/* <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          
-        </div> */}
-      </div>
-    </div>
-  );
-};
