@@ -2,7 +2,7 @@
 
 # Exit immediately if a command exits with a non-zero status.
 set -e
-set -x
+# set -x
 
 # Function to send callback
 send_callback() {
