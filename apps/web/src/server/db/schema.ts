@@ -168,8 +168,10 @@ export const deployments = createTable("deployment", {
     .notNull()
     .$type<"QUEUED" | "BUILDING" | "FAILED" | "SUCCEEDED">()
     .default("QUEUED"),
+
   commitHash: text("commit_hash"),
   branch: text("branch"),
+
   buildLogs: text("build_logs"),
   environmentVariables: text("environment_variables"), // Snapshot of environment variables at deployment time
   deploymentUrl: text("deployment_url"),

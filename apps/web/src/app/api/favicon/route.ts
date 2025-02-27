@@ -10,6 +10,8 @@ async function GET(req: NextRequest) {
     req.nextUrl.origin,
   ).toString();
 
+  console.log(placeholderUrl);
+
   if (!link) {
     console.log("No link provided, redirecting to placeholder favicon", link);
     return NextResponse.redirect(placeholderUrl);
