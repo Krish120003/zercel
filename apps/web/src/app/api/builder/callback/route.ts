@@ -81,15 +81,12 @@ export async function POST(request: NextRequest) {
         .where(eq(deployments.id, deployment.id));
     }
   } else {
-    if (!job?.done) {
-      // todo: mark as building
-      await db
-        .update(deployments)
-        .set({ status: "BUILDING" })
-        .where(eq(deployments.id, deployment.id));
+    await db
+      .update(deployments)
+      .set({ status: "BUILDING" })
+      .where(eq(deployments.id, deployment.id));
 
-      return NextResponse.json({ message: "Job is running" });
-    }
+    return NextResponse.json({ message: "Job is running" });
   }
 
   // console.log("Job", job);
