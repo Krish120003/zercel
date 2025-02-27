@@ -176,6 +176,10 @@ export const sitesRouter = createTRPCRouter({
         },
       });
 
+      site?.deployments.sort((a, b) => {
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+
       return site;
     }),
 
@@ -408,3 +412,5 @@ export const sitesRouter = createTRPCRouter({
       return deletedSubdomain[0]!;
     }),
 });
+
+export type SitesRouter = typeof sitesRouter;
