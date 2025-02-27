@@ -13,15 +13,10 @@ const bodySchema = z.object({
 export async function POST(request: NextRequest) {
   // get the deployment_id from search params
   const { searchParams } = new URL(request.url);
-  console.log("Search params", searchParams);
-
-  //   get the body
 
   const parsedBody = bodySchema.parse(await request.json());
-  console.log("Parsed body", parsedBody);
 
   const deployment_id = searchParams.get("deployment_id");
-  console.log("Deployment ID", deployment_id);
 
   if (!deployment_id) {
     return NextResponse.json(
@@ -33,8 +28,6 @@ export async function POST(request: NextRequest) {
   const deployment = await db.query.deployments.findFirst({
     where: eq(deployments.id, deployment_id),
   });
-
-  console.log("Deployment", deployment);
 
   if (!deployment?.gcp_job_operation_name) {
     return NextResponse.json(
@@ -48,31 +41,8 @@ export async function POST(request: NextRequest) {
   if (parsedBody.status !== "started") {
     // lets wait about 10 seconds before we check the status
     try {
-      await job?.promise();
-    } catch (_) {}
-  }
-
-  if (!job?.done) {
-    // todo: mark as building
-    await db
-      .update(deployments)
-      .set({ status: "BUILDING" })
-      .where(eq(deployments.id, deployment.id));
-
-    return NextResponse.json({ message: "Job is running" });
-  }
-
-  if (job?.done) {
-    console.log("Job is done", job.latestResponse.result);
-
-    if (job.latestResponse.result === "error") {
-      await db
-        .update(deployments)
-        .set({
-          status: "FAILED",
-        })
-        .where(eq(deployments.id, deployment.id));
-    } else if (job.latestResponse.result === "response") {
+      const res = await job?.promise();
+      console.log("[JOB] Job succeded", job.latestResponse.result);
       const updatedDeployment = await db
         .update(deployments)
         .set({
@@ -101,18 +71,28 @@ export async function POST(request: NextRequest) {
           await redis.set(`sha:${subdomain.subdomain}`, deployment.commitHash);
         }
       }
+    } catch (err) {
+      console.log("[JOB] Job failed");
+      await db
+        .update(deployments)
+        .set({
+          status: "FAILED",
+        })
+        .where(eq(deployments.id, deployment.id));
+    }
+  } else {
+    if (!job?.done) {
+      // todo: mark as building
+      await db
+        .update(deployments)
+        .set({ status: "BUILDING" })
+        .where(eq(deployments.id, deployment.id));
+
+      return NextResponse.json({ message: "Job is running" });
     }
   }
 
-  // console.log("Job is done?", job.latestResponse);
-  // job.result
-  // await db
-  //   .update(deployments)
-  //   .set({
-  //     status: "READY",
-  //     buildLogs: job.response?.buildLogs,
-  //   })
-  //   .where(eq(deployments.id, deployment_id));
+  // console.log("Job", job);
 
   return NextResponse.json({ message: "POST request received" });
 }
