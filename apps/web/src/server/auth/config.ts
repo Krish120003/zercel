@@ -25,6 +25,7 @@ declare module "next-auth" {
       // ...other properties
       // role: UserRole;
       accessToken?: string;
+      githubId?: string;
     } & DefaultSession["user"];
   }
 
@@ -73,6 +74,7 @@ export const authConfig = {
         ...session,
         user: {
           accessToken: githubAccount?.access_token,
+          githubId: githubAccount?.providerAccountId,
           ...session.user,
           id: user.id,
         },

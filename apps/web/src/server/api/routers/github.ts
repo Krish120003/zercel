@@ -58,27 +58,42 @@ export const githubRouter = createTRPCRouter({
       const octokit = new Octokit({ auth: accessToken });
 
       // get installations
-      const { data: installations } =
+      const { data: _installations } =
         await octokit.rest.apps.listInstallationsForAuthenticatedUser();
 
-      if (installations.total_count === 0) {
+      const userInstallations =
+        ctx.session.user.githubId !== undefined
+          ? _installations.installations.filter(
+              (installation) =>
+                installation.account?.id ===
+                parseInt(ctx.session.user.githubId ?? "0"),
+            )
+          : [];
+
+      if (userInstallations.length === 0) {
         return [];
       }
 
+      // console.log(
+      //   "Got installations",
+      //   installations,
+      //   "for user",
+      //   ctx.session.user.email,
+      // );
+
       // Create promises for each installation
-      const reposPromises = installations.installations.map(
-        async (installation) => {
-          const installationOctokit =
-            await ctx.githubApp.getInstallationOctokit(installation.id);
+      const reposPromises = userInstallations.map(async (installation) => {
+        const installationOctokit = await ctx.githubApp.getInstallationOctokit(
+          installation.id,
+        );
 
-          const { data: repos } =
-            await installationOctokit.rest.apps.listReposAccessibleToInstallation(
-              { per_page: input.limit },
-            );
+        const { data: repos } =
+          await installationOctokit.rest.apps.listReposAccessibleToInstallation(
+            { per_page: input.limit },
+          );
 
-          return repos.repositories || [];
-        },
-      );
+        return repos.repositories || [];
+      });
 
       // Execute all promises in parallel
       const reposArrays = await Promise.all(reposPromises);
