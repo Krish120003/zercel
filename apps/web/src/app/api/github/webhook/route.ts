@@ -48,11 +48,12 @@ webhooks.on("push", async (event) => {
           commitMessage: commitMessage,
           commitHash: event.payload.after,
           buildLogs: null,
+          environmentVariables: site.environmentVariables,
         })
         .returning();
 
       const [execution, operation] = await requestBuild(
-        deployment[0]!.id,
+        deployment[0]!,
         event.payload.repository.html_url,
         event.payload.after,
       );

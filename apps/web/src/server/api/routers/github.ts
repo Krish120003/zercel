@@ -61,6 +61,8 @@ export const githubRouter = createTRPCRouter({
       const { data: _installations } =
         await octokit.rest.apps.listInstallationsForAuthenticatedUser();
 
+      console.log(JSON.stringify(_installations, null, 2));
+
       const userInstallations =
         ctx.session.user.githubId !== undefined
           ? _installations.installations.filter(
@@ -74,12 +76,14 @@ export const githubRouter = createTRPCRouter({
         return [];
       }
 
-      // console.log(
-      //   "Got installations",
-      //   installations,
-      //   "for user",
-      //   ctx.session.user.email,
-      // );
+      console.log(
+        "Got installations",
+        _installations,
+        "for user",
+        ctx.session.user.email,
+        "filtered to",
+        userInstallations,
+      );
 
       // Create promises for each installation
       const reposPromises = userInstallations.map(async (installation) => {

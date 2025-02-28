@@ -10,6 +10,7 @@ import { ChevronLeft, ExternalLink } from "lucide-react"; // Add this import for
 import { DeploymentItem } from "./_components/deployment-item";
 import { DeploymentList } from "./_components/deployment-list";
 import { SiGithub } from "@icons-pack/react-simple-icons";
+import { EnvManager } from "./_components/env-manager";
 
 export default async function Page({
   searchParams,
@@ -33,6 +34,8 @@ export default async function Page({
   if (!siteData) {
     return redirect("/404");
   }
+
+  const initialEnvVars = await api.sites.getSiteEnvVars({ siteId });
 
   return (
     <HydrateClient>
@@ -126,7 +129,6 @@ export default async function Page({
                       initialSiteData={siteData}
                     />
                   </div>
-                  <div>Environtment Variables are not currently supported.</div>
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-4">
@@ -138,6 +140,21 @@ export default async function Page({
                       <SubdomainManager
                         siteId={siteData.id}
                         subdomains={siteData.subdomains}
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Environment Variables</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Add environment variables for your application.
+                      </p>
+                    </CardHeader>
+                    <CardContent className="">
+                      <EnvManager
+                        siteId={siteData.id}
+                        initialEnvVars={initialEnvVars}
                       />
                     </CardContent>
                   </Card>

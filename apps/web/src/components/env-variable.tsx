@@ -10,8 +10,9 @@ import {
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
 import { ChevronDown, ExternalLink, Minus, Plus } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import { cn } from "~/lib/utils";
 
 interface EnvVar {
   key: string;
@@ -20,11 +21,25 @@ interface EnvVar {
 
 interface EnvVariablesProps {
   initalEnvVars?: EnvVar[];
+  onEnvVarsChange?: (envVars: EnvVar[]) => void;
+  mode?: "deploy" | "edit";
 }
 
-export default function EnvVariables({ initalEnvVars }: EnvVariablesProps) {
+export default function EnvVariables({
+  initalEnvVars,
+  onEnvVarsChange,
+  mode = "deploy",
+}: EnvVariablesProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [envVars, setEnvVars] = useState<EnvVar[]>(initalEnvVars ?? []);
+  const [animationRef] = useAutoAnimate();
+
+  // Notify parent component when envVars change
+  useEffect(() => {
+    if (onEnvVarsChange) {
+      onEnvVarsChange(envVars);
+    }
+  }, [envVars, onEnvVarsChange]);
 
   const parseEnvContent = useCallback((content: string) => {
     const lines = content.split("\n");
@@ -94,8 +109,6 @@ export default function EnvVariables({ initalEnvVars }: EnvVariablesProps) {
     [envVars, parseEnvContent],
   );
 
-  const [animationRef] = useAutoAnimate();
-
   const addMore = () => {
     setEnvVars([...envVars, { key: "", value: "" }]);
   };
@@ -112,67 +125,78 @@ export default function EnvVariables({ initalEnvVars }: EnvVariablesProps) {
     };
   };
 
+  const content = (
+    <div className="space-y-4">
+      <div
+        className="grid grid-cols-[1fr,1fr,auto] items-start gap-4"
+        ref={animationRef}
+      >
+        <div className="text-sm font-medium text-muted-foreground">Key</div>
+        <div className="text-sm font-medium text-muted-foreground">Value</div>
+        <div className="w-10"></div>
+        {envVars.map((envVar, index) => (
+          <React.Fragment key={index}>
+            <Input
+              value={envVar.key}
+              onChange={handleChange(index, "key")}
+              className="font-mono"
+              placeholder={mode === "edit" ? "API_KEY" : ""}
+            />
+            <Input
+              value={envVar.value}
+              onChange={handleChange(index, "value")}
+              className="font-mono"
+              placeholder={mode === "edit" ? "your-api-key" : ""}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => removeVar(index)}
+              className="h-10 w-10 hover:bg-gray-100"
+            >
+              <Minus className="h-4 w-4" />
+              <span className="sr-only">Remove variable</span>
+            </Button>
+          </React.Fragment>
+        ))}
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={addMore}
+        className="flex items-center gap-2"
+      >
+        <Plus className="h-4 w-4" />
+        Add More
+      </Button>
+
+      <p className="text-sm text-muted-foreground">
+        Paste an .env above to import multiple variables at once.
+      </p>
+    </div>
+  );
+
   return (
     <div
-      className="w-full max-w-3xl rounded-lg border bg-background p-4"
+      className={cn("w-full", {
+        "rounded-lg border bg-background p-4": mode === "deploy",
+      })}
       onPaste={handlePaste}
     >
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="flex w-full items-center text-lg font-medium">
-          <ChevronDown
-            className={`mr-2 h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          />
-          Environment Variables
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-4 space-y-4">
-          <div
-            className="grid grid-cols-[1fr,1fr,auto] items-start gap-4"
-            ref={animationRef}
-          >
-            <div className="text-sm font-medium text-muted-foreground">Key</div>
-            <div className="text-sm font-medium text-muted-foreground">
-              Value
-            </div>
-            <div className="w-10"></div>
-            {envVars.map((envVar, index) => (
-              <React.Fragment key={index}>
-                <Input
-                  value={envVar.key}
-                  onChange={handleChange(index, "key")}
-                  className="font-mono"
-                />
-                <Input
-                  value={envVar.value}
-                  onChange={handleChange(index, "value")}
-                  className="font-mono"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeVar(index)}
-                  className="h-10 w-10 hover:bg-gray-100"
-                >
-                  <Minus className="h-4 w-4" />
-                  <span className="sr-only">Remove variable</span>
-                </Button>
-              </React.Fragment>
-            ))}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={addMore}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add More
-          </Button>
-          <p className="text-sm text-muted-foreground">
-            Paste an .env above to import multiple variables at once.
-          </p>
-        </CollapsibleContent>
-      </Collapsible>
+      {mode === "deploy" ? (
+        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+          <CollapsibleTrigger className="flex w-full items-center text-lg font-medium">
+            <ChevronDown
+              className={`mr-2 h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            />
+            Environment Variables
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-4">{content}</CollapsibleContent>
+        </Collapsible>
+      ) : (
+        content
+      )}
     </div>
   );
 }

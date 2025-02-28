@@ -14,7 +14,7 @@ const subdomainSchema = z
   .max(63)
   .regex(/^[a-z0-9-]+$/);
 
-const envVarEntry = z.object({
+export const envVarEntry = z.object({
   key: z.string(),
   value: z.string(),
 });
@@ -108,6 +108,7 @@ export const sitesRouter = createTRPCRouter({
           repository: input.repository,
           type: input.type,
           userId,
+          environmentVariables: JSON.stringify(input.environmentVariables),
         })
         .returning();
 
@@ -132,13 +133,14 @@ export const sitesRouter = createTRPCRouter({
           branch: branchName,
           commitHash: commitHash,
           buildLogs: null,
+          environmentVariables: site[0]!.environmentVariables,
         })
         .returning();
 
       console.log("Deployment row", deployment);
 
       const [execution, operation] = await requestBuild(
-        deployment[0]!.id,
+        deployment[0]!,
         repoDetails.html_url,
         commitHash,
       );
@@ -175,6 +177,13 @@ export const sitesRouter = createTRPCRouter({
           deployments: true,
         },
       });
+
+      if (!site) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Site not found.",
+        });
+      }
 
       site?.deployments.sort((a, b) => {
         return b.createdAt.getTime() - a.createdAt.getTime();
@@ -410,6 +419,91 @@ export const sitesRouter = createTRPCRouter({
       await ctx.redis.del(`sha:${input.subdomain}`);
 
       return deletedSubdomain[0]!;
+    }),
+
+  getSiteEnvVars: protectedProcedure
+    .input(z.object({ siteId: z.string() }))
+    .output(envVarEntry.array())
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Verify site ownership
+      const site = await ctx.db.query.sites.findFirst({
+        where: and(eq(sites.userId, userId), eq(sites.id, input.siteId)),
+      });
+
+      if (!site) {
+        throw new Error("Site not found or you don't have access to it.");
+      }
+
+      return JSON.parse(site.environmentVariables ?? "[]");
+    }),
+
+  editSiteEnvVars: protectedProcedure
+    .input(
+      z.object({
+        siteId: z.string(),
+        triggerBuild: z.boolean().default(false),
+        environmentVariables: z.array(envVarEntry),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+
+      // Verify site ownership
+      const site = await ctx.db.query.sites.findFirst({
+        where: and(eq(sites.userId, userId), eq(sites.id, input.siteId)),
+      });
+
+      if (!site) {
+        throw new Error("Site not found or you don't have access to it.");
+      }
+
+      const siteUpdated = await ctx.db
+        .update(sites)
+        .set({
+          environmentVariables: JSON.stringify(input.environmentVariables),
+        })
+        .where(eq(sites.id, input.siteId))
+        .returning();
+
+      if (input.triggerBuild) {
+        // get the branch and commit hash of the active deployment
+        const activeDeployment = await ctx.db.query.deployments.findFirst({
+          where: eq(deployments.id, siteUpdated[0]!.activeDeploymentId ?? ""),
+        });
+
+        // create a new deployment
+        const deployment = await ctx.db
+          .insert(deployments)
+          .values({
+            siteId: site.id,
+            status: "QUEUED",
+
+            branch: activeDeployment?.branch ?? "",
+            commitMessage: activeDeployment?.commitMessage ?? "",
+            commitHash: activeDeployment?.commitHash ?? "",
+
+            buildLogs: null,
+            environmentVariables: JSON.stringify(input.environmentVariables),
+          })
+          .returning();
+
+        const [execution, operation] = await requestBuild(
+          deployment[0]!,
+          site.repository ?? "",
+          activeDeployment?.commitHash ?? "",
+        );
+
+        // add the execution name to the deployment
+        await ctx.db
+          .update(deployments)
+          .set({
+            gcp_job_operation_name: operation,
+            gcp_job_execution_name: execution,
+          })
+          .where(eq(deployments.id, deployment[0]!.id));
+      }
     }),
 });
 
