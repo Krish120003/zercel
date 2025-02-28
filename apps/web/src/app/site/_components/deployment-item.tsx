@@ -7,12 +7,14 @@ import {
   Clock,
   GitBranch,
   GitCommit,
+  MessageSquare,
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { api } from "~/trpc/react";
 import { Skeleton } from "~/components/ui/skeleton";
+import { cn } from "~/lib/utils";
 
 // Add this helper function before the component
 const getStatusBadge = (status: string) => {
@@ -50,6 +52,7 @@ interface Deployment {
   branch: string | null;
   createdAt: Date;
   commitHash: string | null;
+  commitMessage: string | null;
 }
 
 // First, create a DeploymentItem component for better organization
@@ -61,6 +64,7 @@ export const DeploymentItem = ({ deployment }: { deployment: Deployment }) => {
   });
 
   const [isShowingLogs, setIsShowingLogs] = useState<boolean>(false);
+  const isRefetchingLogs = deployment.status !== "SUCCEEDED";
 
   const { data, isLoading } = api.sites.getDeploymentLogs.useQuery(
     {
@@ -69,7 +73,7 @@ export const DeploymentItem = ({ deployment }: { deployment: Deployment }) => {
     {
       enabled: isShowingLogs,
       // Add refetch interval if status is not SUCCEEDED
-      refetchInterval: deployment.status !== "SUCCEEDED" ? 5000 : false,
+      refetchInterval: isRefetchingLogs ? 5000 : false,
     },
   );
 
@@ -80,23 +84,37 @@ export const DeploymentItem = ({ deployment }: { deployment: Deployment }) => {
     >
       <div className="flex items-center justify-between gap-4">
         <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h3 className="font-mono font-medium">
-              {deployment.id.slice(0, 8)}
-            </h3>
-            <a
-              // href={deployment.repoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex cursor-pointer items-center text-sm text-muted-foreground hover:underline"
-            >
-              <GitBranch className="mr-2 h-4 w-4" />
-              <span>{deployment.branch}</span>
-            </a>
-            <Badge className={`${color} flex items-center gap-1 capitalize`}>
-              <StatusIcon className="h-3 w-3" />
-              {deployment.status.toLowerCase()}
-            </Badge>
+          <div>
+            <div className="flex items-center gap-4">
+              <h3 className="font-mono font-medium">
+                {deployment.id.slice(0, 8)}
+              </h3>
+              <a
+                // href={deployment.repoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex cursor-pointer items-center text-sm text-muted-foreground hover:underline"
+              >
+                <GitBranch className="mr-2 h-4 w-4" />
+                <span>{deployment.branch}</span>
+              </a>
+              <Badge className={`${color} flex items-center gap-1 capitalize`}>
+                <StatusIcon className="h-3 w-3" />
+                {deployment.status.toLowerCase()}
+              </Badge>
+            </div>
+            <div>
+              {deployment.commitMessage ? (
+                <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <MessageSquare className="h-4 w-4" />
+                  {deployment.commitMessage}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No commit message
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex flex-col items-end gap-2 text-sm text-muted-foreground">
             <div className="flex items-center">
@@ -141,7 +159,13 @@ export const DeploymentItem = ({ deployment }: { deployment: Deployment }) => {
               data?.map((log, index) => (
                 <li
                   key={index}
-                  className="grid w-full cursor-pointer grid-cols-12 px-4 opacity-75 hover:opacity-100"
+                  className={cn(
+                    "grid w-full cursor-pointer grid-cols-12 px-4",
+                    {
+                      "bg-red-100 text-red-500 dark:bg-red-900/40 dark:text-red-500":
+                        log.message.toLowerCase().includes("error"),
+                    },
+                  )}
                 >
                   <div className="col-span-3">{log.timestamp}</div>
                   <div className="col-span-9 whitespace-pre-wrap break-words">

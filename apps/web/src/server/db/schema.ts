@@ -169,6 +169,7 @@ export const deployments = createTable("deployment", {
     .$type<"QUEUED" | "BUILDING" | "FAILED" | "SUCCEEDED">()
     .default("QUEUED"),
 
+  commitMessage: text("commit_message"),
   commitHash: text("commit_hash"),
   branch: text("branch"),
 

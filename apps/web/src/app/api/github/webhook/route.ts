@@ -32,6 +32,12 @@ webhooks.on("push", async (event) => {
     for (const site of data) {
       console.log("Creating new deployment for site:", site);
 
+      // event.payload.commits
+      // get the latest
+      const commitMessage =
+        event.payload.commits[event.payload.commits.length - 1]!.message ??
+        "No message";
+
       // create a new deployment
       const deployment = await db
         .insert(deployments)
@@ -39,6 +45,7 @@ webhooks.on("push", async (event) => {
           siteId: site.id,
           status: "QUEUED",
           branch: pushedBranchName,
+          commitMessage: commitMessage,
           commitHash: event.payload.after,
           buildLogs: null,
         })
