@@ -40,10 +40,10 @@ export default async function Page({
       <main className="min-h-screen">
         <div className="flex flex-col gap-8">
           <div className="px-8">
-            <div className="container mx-auto px-8 pt-16">
+            <div className="container mx-auto px-8 pt-12">
               <Link
                 href="/"
-                className="mb-6 flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                className="mb-5 flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Back to projects
