@@ -15,7 +15,7 @@ import { Button } from "~/components/ui/button";
 import { ProjectItem } from "./_components/project-item";
 
 async function Deploy({ first }: { first: boolean }) {
-  const repos = await api.github.getUserRepos();
+  const repos = await api.github.getUserRepos({ limit: 30 });
 
   return (
     <div className="flex flex-col gap-8">
@@ -34,7 +34,7 @@ async function Deploy({ first }: { first: boolean }) {
 
       <div className="min-h-[calc(80vh)] w-full border-t-2 bg-neutral-50 p-8 dark:border-t-neutral-800 dark:bg-neutral-900">
         <div className="container mx-auto overflow-hidden rounded-2xl border bg-background p-8 dark:border-neutral-800">
-          <RepositoryList repos={repos} appLink={env.GITHUB_APP_URL} />
+          <RepositoryList initialRepos={repos} appLink={env.GITHUB_APP_URL} />
         </div>
       </div>
     </div>
