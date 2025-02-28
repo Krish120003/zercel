@@ -29,7 +29,7 @@ export async function requestBuild(
 
   const userEnvVars = envVarEntry
     .array()
-    .safeParse(JSON.parse(deployment.environmentVariables || "[]"));
+    .safeParse(JSON.parse(deployment.environmentVariables ?? "[]"));
 
   console.log("User Env vars", userEnvVars.success, userEnvVars.error);
 

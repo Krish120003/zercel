@@ -87,8 +87,6 @@ export const sitesRouter = createTRPCRouter({
         throw new Error("Repository not found or you don't have access to it.");
       }
 
-      // repoDetails <--- i dont have access to this var cause its undefined, how do I fix?
-
       const branchName = repoDetails.default_branch; // TODO: GET
 
       // # get latesst commit of tihs branch
@@ -436,7 +434,9 @@ export const sitesRouter = createTRPCRouter({
         throw new Error("Site not found or you don't have access to it.");
       }
 
-      return JSON.parse(site.environmentVariables ?? "[]");
+      return envVarEntry
+        .array()
+        .parse(JSON.parse(site.environmentVariables ?? "[]"));
     }),
 
   editSiteEnvVars: protectedProcedure
@@ -473,6 +473,8 @@ export const sitesRouter = createTRPCRouter({
           where: eq(deployments.id, siteUpdated[0]!.activeDeploymentId ?? ""),
         });
 
+        // get repo url
+
         // create a new deployment
         const deployment = await ctx.db
           .insert(deployments)
@@ -491,7 +493,7 @@ export const sitesRouter = createTRPCRouter({
 
         const [execution, operation] = await requestBuild(
           deployment[0]!,
-          site.repository ?? "",
+          `https://github.com/${site.repository}`,
           activeDeployment?.commitHash ?? "",
         );
 
