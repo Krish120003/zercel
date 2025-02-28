@@ -116,7 +116,7 @@ export const sitesRouter = createTRPCRouter({
         .insert(siteSubdomains)
         .values({
           siteId: site[0]!.id,
-          subdomain: input.name + "-" + site[0]!.id.slice(0, 7),
+          subdomain: input.name.toLowerCase() + "-" + site[0]!.id.slice(0, 7),
         })
         .returning();
 
