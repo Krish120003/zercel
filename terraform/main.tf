@@ -56,6 +56,9 @@ resource "google_cloud_run_v2_service" "nextjs_app" {
   name                = "nextjs-app"
   location            = "us-east1"
   deletion_protection = var.deletion_protection
+  labels = {
+    "cost-center-label" = "nextjs-app"
+  }
 
   template {
     containers {
@@ -197,8 +200,11 @@ resource "google_storage_bucket" "builder_bucket" {
 
 # Creates a Cloud Run Job for the builder service
 resource "google_cloud_run_v2_job" "builder" {
-  name                = "builder-job"
-  location            = "us-east1"
+  name     = "builder-job"
+  location = "us-east1"
+  labels = {
+    "cost-center-label" = "builder-job"
+  }
   deletion_protection = var.deletion_protection
 
   template {
@@ -248,6 +254,10 @@ resource "google_cloud_run_v2_service" "router" {
   name                = "router"
   location            = "us-east1"
   deletion_protection = false
+  labels = {
+    "cost-center-label" = "router"
+  }
+
 
   template {
     volumes {
@@ -268,6 +278,7 @@ resource "google_cloud_run_v2_service" "router" {
           memory = "512Mi" # 512MB RAM
         }
       }
+
 
       volume_mounts {
         name       = "builder-storage"
@@ -293,7 +304,10 @@ resource "google_cloud_run_v2_service" "router" {
     scaling {
       max_instance_count = 1
       min_instance_count = 0
+
     }
+
+    max_instance_request_concurrency = 500
   }
 }
 
