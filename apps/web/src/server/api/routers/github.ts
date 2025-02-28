@@ -39,8 +39,13 @@ export const githubRouter = createTRPCRouter({
   }),
 
   getUserRepos: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().default(100),
+      }),
+    )
     .output(githubRepoSchema.array())
-    .query(async ({ ctx }) => {
+    .query(async ({ ctx, input }) => {
       const accessToken = ctx.session.user.accessToken;
       if (!accessToken) {
         throw new TRPCError({
@@ -52,14 +57,43 @@ export const githubRouter = createTRPCRouter({
 
       const octokit = new Octokit({ auth: accessToken });
 
-      const { data: repos } = await octokit.rest.repos.listForAuthenticatedUser(
-        {
-          per_page: 1000,
-          sort: "pushed",
+      // get installations
+      const { data: installations } =
+        await octokit.rest.apps.listInstallationsForAuthenticatedUser();
+
+      if (installations.total_count === 0) {
+        return [];
+      }
+
+      // Create promises for each installation
+      const reposPromises = installations.installations.map(
+        async (installation) => {
+          const installationOctokit =
+            await ctx.githubApp.getInstallationOctokit(installation.id);
+
+          const { data: repos } =
+            await installationOctokit.rest.apps.listReposAccessibleToInstallation(
+              { per_page: input.limit },
+            );
+
+          return repos.repositories || [];
         },
       );
 
-      return repos;
+      // Execute all promises in parallel
+      const reposArrays = await Promise.all(reposPromises);
+
+      // Flatten the array of arrays into a single array
+      const allRepositories = reposArrays.flat();
+
+      allRepositories.sort((a, b) => {
+        return (
+          new Date(b.updated_at ?? 0).getTime() -
+          new Date(a.updated_at ?? 0).getTime()
+        );
+      });
+
+      return allRepositories;
     }),
 
   getRepoDetailsByName: protectedProcedure
