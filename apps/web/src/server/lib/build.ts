@@ -35,6 +35,10 @@ export async function requestBuild(
 
   if (userEnvVars.success) {
     for (const envVar of userEnvVars.data) {
+      // if name is empty then skip
+      if (!envVar.key || envVar.key.trim() === "") {
+        continue;
+      }
       envOverrides.push({
         name: envVar.key,
         value: envVar.value,
