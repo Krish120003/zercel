@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
@@ -6,7 +7,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { SiGithub } from "@icons-pack/react-simple-icons";
-import { GitBranch, Loader, LoaderCircle } from "lucide-react";
+import {
+  FileTextIcon,
+  GitBranch,
+  Loader,
+  LoaderCircle,
+  ServerIcon,
+} from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -97,6 +104,61 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
                   <FormControl>
                     <Input placeholder="Enter site name" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Selection between Static or Server */}
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem className="">
+                  <FormLabel>Site Type</FormLabel>
+                  <div className="grid w-full grid-cols-2 gap-4">
+                    <label
+                      className={`col-span-1 flex cursor-pointer flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent ${field.value === "static" ? "border-primary bg-accent/50" : "border-border"}`}
+                      htmlFor="static-type"
+                    >
+                      <div className="mb-2 rounded-full bg-primary/10 p-2">
+                        <FileTextIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <span className="font-medium">Static</span>
+                      <span className="text-xs text-muted-foreground">
+                        HTML/CSS, Vite etc.
+                      </span>
+                      <input
+                        type="radio"
+                        id="static-type"
+                        value="static"
+                        className="sr-only"
+                        checked={field.value === "static"}
+                        onChange={() => field.onChange("static")}
+                      />
+                    </label>
+
+                    <label
+                      className={`col-span-1 flex cursor-pointer flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent ${field.value === "server" ? "border-primary bg-accent/50" : "border-border"}`}
+                      htmlFor="server-type"
+                    >
+                      <div className="mb-2 rounded-full bg-primary/10 p-2">
+                        <ServerIcon className="h-6 w-6 text-primary" />
+                      </div>
+                      <span className="font-medium">Server</span>
+                      <span className="text-xs text-muted-foreground">
+                        Next.js, Vite with SSR
+                      </span>
+                      <input
+                        type="radio"
+                        id="server-type"
+                        value="server"
+                        className="sr-only"
+                        checked={field.value === "server"}
+                        onChange={() => field.onChange("server")}
+                      />
+                    </label>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

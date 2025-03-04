@@ -5,6 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { env } from "process";
 import { Octokit } from "@octokit/rest";
 import { getJobLogs, requestBuild } from "~/server/lib/build";
+import { requestServerBuild } from "~/server/lib/serverBuild";
 import { TRPCError } from "@trpc/server";
 import { parse } from "path";
 
@@ -137,11 +138,23 @@ export const sitesRouter = createTRPCRouter({
 
       console.log("Deployment row", deployment);
 
-      const [execution, operation] = await requestBuild(
-        deployment[0]!,
-        repoDetails.html_url,
-        commitHash,
-      );
+      // Choose the appropriate build function based on site type
+      let execution, operation;
+      if (site[0]!.type === "server") {
+        // For server sites, use the server build process
+        [execution, operation] = await requestServerBuild(
+          deployment[0]!,
+          repoDetails.html_url,
+          commitHash,
+        );
+      } else {
+        // For static sites, use the original build process
+        [execution, operation] = await requestBuild(
+          deployment[0]!,
+          repoDetails.html_url,
+          commitHash,
+        );
+      }
 
       await ctx.db
         .update(deployments)
@@ -491,11 +504,23 @@ export const sitesRouter = createTRPCRouter({
           })
           .returning();
 
-        const [execution, operation] = await requestBuild(
-          deployment[0]!,
-          `https://github.com/${site.repository}`,
-          activeDeployment?.commitHash ?? "",
-        );
+        // Choose the appropriate build function based on site type
+        let execution, operation;
+        if (site.type === "server") {
+          // For server sites, use the server build process
+          [execution, operation] = await requestServerBuild(
+            deployment[0]!,
+            `https://github.com/${site.repository}`,
+            activeDeployment?.commitHash ?? "",
+          );
+        } else {
+          // For static sites, use the original build process
+          [execution, operation] = await requestBuild(
+            deployment[0]!,
+            `https://github.com/${site.repository}`,
+            activeDeployment?.commitHash ?? "",
+          );
+        }
 
         // add the execution name to the deployment
         await ctx.db

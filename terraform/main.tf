@@ -494,6 +494,78 @@ resource "google_certificate_manager_certificate_map" "z-map" {
 #   hostname     = "*.zercel.dev"
 # }
 
+// Batch Job service account
+resource "google_service_account" "batch_job_service_account" {
+  account_id   = "batch-job-sa"
+  display_name = "Batch Job Service Account"
+  project = var.project_id
+}
+
+// Add IAM binding to grant Artifact Registry permissions to the service account
+resource "google_project_iam_member" "batch_job_artifact_registry_permissions" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+// Add VM default roles to batch job service account
+resource "google_project_iam_member" "batch_job_compute_default" {
+  project = var.project_id
+  role    = "roles/compute.serviceAgent"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+resource "google_project_iam_member" "batch_job_storage_object_viewer" {
+  project = var.project_id
+  role    = "roles/storage.objectViewer"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+resource "google_project_iam_member" "batch_job_logging_logwriter" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+resource "google_project_iam_member" "batch_job_monitoring_metricwriter" {
+  project = var.project_id
+  role    = "roles/monitoring.metricWriter"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+// Add Batch service roles
+resource "google_project_iam_member" "batch_job_batch_agent" {
+  project = var.project_id
+  role    = "roles/batch.serviceAgent"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+resource "google_project_iam_member" "batch_job_batch_jobs_admin" {
+  project = var.project_id
+  role    = "roles/batch.jobsAdmin"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+// Add storage object creator role for writing to buckets
+resource "google_project_iam_member" "batch_job_storage_object_creator" {
+  project = var.project_id
+  role    = "roles/storage.objectCreator"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+// Add batch.agentReporter role to the service account
+resource "google_project_iam_member" "batch_job_agent_reporter" {
+  project = var.project_id
+  role    = "roles/batch.agentReporter"
+  member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+}
+
+# resource "google_project_iam_member" "batch_job_storage_object_creator" {
+#   project = var.project_id
+#   role    = "roles/storage.objectCreator"
+#   member  = "serviceAccount:${google_service_account.batch_job_service_account.email}"
+# }
+
 # ===================
 # Output Variables
 # ===================

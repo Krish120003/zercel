@@ -114,12 +114,21 @@ export const sites = createTable("site", {
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+
+  // Config
   name: text("name").notNull(),
   description: text("description"),
+  environmentVariables: text("environment_variables"), // Current/latest environment variables for the site
   repository: text("repository"),
   type: text("type").notNull().$type<"static" | "server">(),
-  activeDeploymentId: text("active_deployment_id"),
-  environmentVariables: text("environment_variables"), // Current/latest environment variables for the site
+
+  // Deployment metadata
+  activeDeploymentId: text("active_deployment_id"), // to figure out either the sha for static sites or the revision for server sites
+
+  // we can use site id + commit hash for container versioning
+  // only remaining thing is we need to keep track of the cloud run service/instance name?
+  gcp_cloud_run_service: text("gcp_cloud_run_service"), // For Server Sites
+
   createdAt: timestamp("created_at", { mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -175,16 +184,21 @@ export const deployments = createTable("deployment", {
 
   buildLogs: text("build_logs"),
   environmentVariables: text("environment_variables"), // Snapshot of environment variables at deployment time
-  deploymentUrl: text("deployment_url"),
+
+  deploymentUrl: text("deployment_url"), // FIXME: Either use this or remove this?
+
   createdAt: timestamp("created_at", { mode: "date" })
     .notNull()
     .$defaultFn(() => new Date()),
   startedAt: timestamp("started_at", { mode: "date" }),
   completedAt: timestamp("completed_at", { mode: "date" }),
 
-  // GCP Stuff
+  // GCP Build Identifiers
   gcp_job_operation_name: text("gcp_job_operation_name"),
   gcp_job_execution_name: text("gcp_job_execution_name"),
+
+  // For Server Sites - GCP Cloud Run Revision Identifiers
+  gcp_cloud_run_revision: text("gcp_cloud_run_revision"),
 });
 
 export const deploymentsRelations = relations(deployments, ({ one }) => ({

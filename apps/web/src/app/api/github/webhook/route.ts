@@ -6,6 +6,7 @@ import { db } from "~/server/db";
 import { eq } from "drizzle-orm";
 import { deployments, sites } from "~/server/db/schema";
 import { requestBuild } from "~/server/lib/build";
+import { requestServerBuild } from "~/server/lib/serverBuild";
 import { EventPayloadMap } from "node_modules/@octokit/webhooks/dist-types/generated/webhook-identifiers";
 
 const webhooks = new Webhooks({
@@ -52,11 +53,23 @@ webhooks.on("push", async (event) => {
         })
         .returning();
 
-      const [execution, operation] = await requestBuild(
-        deployment[0]!,
-        event.payload.repository.html_url,
-        event.payload.after,
-      );
+      // Choose the appropriate build function based on site type
+      let execution, operation;
+      if (site.type === "server") {
+        // For server sites, use the server build process
+        [execution, operation] = await requestServerBuild(
+          deployment[0]!,
+          event.payload.repository.html_url,
+          event.payload.after,
+        );
+      } else {
+        // For static sites, use the original build process
+        [execution, operation] = await requestBuild(
+          deployment[0]!,
+          event.payload.repository.html_url,
+          event.payload.after,
+        );
+      }
 
       // add the execution name to the deployment
       await db

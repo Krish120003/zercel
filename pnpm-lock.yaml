@@ -56,6 +56,9 @@ importers:
       '@formkit/auto-animate':
         specifier: ^0.8.2
         version: 0.8.2
+      '@google-cloud/batch':
+        specifier: ^1.16.1
+        version: 1.16.1
       '@google-cloud/logging':
         specifier: ^11.2.0
         version: 11.2.0
@@ -840,6 +843,10 @@ packages:
 
   '@formkit/auto-animate@0.8.2':
     resolution: {integrity: sha512-SwPWfeRa5veb1hOIBMdzI+73te5puUBHmqqaF1Bu7FjvxlYSz/kJcZKSa9Cg60zL0uRNeJL2SbRxV6Jp6Q1nFQ==}
+
+  '@google-cloud/batch@1.16.1':
+    resolution: {integrity: sha512-K3m3gOXzUFOLJHjdp+rhcnioiHtGMBmauJHQcjsI7hHocs+Wj11IL3xTITZlEbLvpm5097eFyZ5+ho0wV9DtPg==}
+    engines: {node: '>=14.0.0'}
 
   '@google-cloud/common@5.0.2':
     resolution: {integrity: sha512-V7bmBKYQyu0eVG2BFejuUjlBt+zrya6vtsKdY+JxMM/dNntPF41vZ9+LhOshEUH01zOHEqBSvI7Dad7ZS6aUeA==}
@@ -4824,6 +4831,13 @@ snapshots:
   '@floating-ui/utils@0.2.9': {}
 
   '@formkit/auto-animate@0.8.2': {}
+
+  '@google-cloud/batch@1.16.1':
+    dependencies:
+      google-gax: 4.4.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
 
   '@google-cloud/common@5.0.2':
     dependencies:

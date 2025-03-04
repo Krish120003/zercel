@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     git \
     bash \
     unzip \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------
 # Install fnm (Fast Node Manager)
@@ -22,8 +22,8 @@ ENV PATH=/root/.fnm:$PATH
 # --------------------------------------------------
 # Setup Git
 # --------------------------------------------------
-RUN git config --global user.email "builder@example.com"
-RUN git config --global user.name "Docker Builder"
+RUN git config --global user.email "builder@zercel.dev"
+RUN git config --global user.name "Zercel Build Runner"
 
 
 WORKDIR /builder
