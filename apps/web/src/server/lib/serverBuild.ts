@@ -4,6 +4,7 @@ import { env } from "~/env";
 import { deployments, sites } from "../db/schema";
 import { BatchServiceClient } from "@google-cloud/batch";
 import { google } from "@google-cloud/batch/build/protos/protos";
+import { Logging } from "@google-cloud/logging";
 
 // Define the type for deployment and site
 type Deployment = typeof deployments.$inferSelect;
@@ -14,8 +15,10 @@ interface EnvVarEntry {
   key: string;
   value: string;
 }
-
 type BatchJobResource = google.cloud.batch.v1.IJob;
+
+const batchClient = new BatchServiceClient();
+const logging = new Logging();
 
 /**
  * Submits a GCP Batch job to build a Docker container using a VM instance
@@ -33,7 +36,6 @@ export async function requestServerBuild(
   sha?: string,
 ): Promise<[string | null, string | null]> {
   // Create a client for the Batch service
-  const batchClient = new BatchServiceClient();
 
   // Get configuration from environment variables
   const projectId = env.GOOGLE_CLOUD_PROJECT;
@@ -120,6 +122,11 @@ CMD ["npm", "start"]
 # Exit immediately if a command exits with a non-zero status
 set -e
 
+# Set environment variables
+${Object.entries(envVars)
+  .map(([key, value]) => `export ${key}="${value}"`)
+  .join("\n")}
+
 # Install necessary packages
 apt-get update
 apt-get install -y git curl apt-transport-https ca-certificates gnupg lsb-release
@@ -136,10 +143,7 @@ systemctl start docker
 # Add docker to $PATH
 export PATH=$PATH:/usr/bin
 
-# Set environment variables
-${Object.entries(envVars)
-  .map(([key, value]) => `export ${key}="${value}"`)
-  .join("\n")}
+
 
 # Function to send callback
 send_callback() {
@@ -224,7 +228,8 @@ echo "Build and push completed successfully"
           maxRetryCount: 0,
           maxRunDuration: {
             seconds: 3600,
-          }, // 1 hour timeout
+          },
+          // 1 hour timeout
         },
         taskCount: 1,
       },
@@ -232,6 +237,7 @@ echo "Build and push completed successfully"
     logsPolicy: {
       destination: "CLOUD_LOGGING",
     },
+
     allocationPolicy: {
       instances: [
         {
@@ -290,11 +296,9 @@ echo "Build and push completed successfully"
  */
 export async function getServerBuildStatus(jobName: string) {
   try {
-    // Create a client for the Batch service
-    const batchClient = new BatchServiceClient();
-
     // Get the job status
     const [job] = await batchClient.getJob({ name: jobName });
+
     return job;
   } catch (error) {
     console.error("Error fetching job status:", error);
@@ -309,29 +313,12 @@ export async function getServerBuildStatus(jobName: string) {
  * @returns The job logs
  */
 export async function getServerBuildLogs(jobName: string) {
-  try {
-    // For now, we'll just return a placeholder
-    // In a real implementation, you would use the Cloud Logging API to fetch logs
-    // based on the job name as a filter
-    console.log(`Fetching logs for job: ${jobName}`);
+  const entries = await logging.getEntries({
+    filter: `
+"${jobName}"
+logName="projects/vercel-clone-1/logs/batch_task_logs"
+`.trim(),
+  });
 
-    // Create a client for the Batch service
-    const batchClient = new BatchServiceClient();
-
-    // Get the job status to check if it exists
-    const [job] = await batchClient.getJob({ name: jobName });
-
-    if (!job) {
-      return [{ message: "Job not found" }];
-    }
-
-    return [
-      {
-        message: `Job status: ${job.status?.state ?? "Unknown"}. Detailed logs not yet implemented.`,
-      },
-    ];
-  } catch (error) {
-    console.error("Error fetching job logs:", error);
-    throw error;
-  }
+  return entries;
 }

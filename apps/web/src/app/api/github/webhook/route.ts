@@ -58,6 +58,7 @@ webhooks.on("push", async (event) => {
       if (site.type === "server") {
         // For server sites, use the server build process
         [execution, operation] = await requestServerBuild(
+          site,
           deployment[0]!,
           event.payload.repository.html_url,
           event.payload.after,

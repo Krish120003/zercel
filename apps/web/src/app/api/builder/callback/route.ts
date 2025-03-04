@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "~/server/db";
 import { deployments, sites, siteSubdomains } from "~/server/db/schema";
 import { getJobStatus } from "~/server/lib/build";
+import { getServerBuildStatus } from "~/server/lib/serverBuild";
 import { redis } from "~/server/redis";
 
 const bodySchema = z.object({
@@ -27,6 +28,9 @@ export async function POST(request: NextRequest) {
 
   const deployment = await db.query.deployments.findFirst({
     where: eq(deployments.id, deployment_id),
+    with: {
+      site: true,
+    },
   });
 
   if (!deployment?.gcp_job_operation_name) {
@@ -36,60 +40,68 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const job = await getJobStatus(deployment?.gcp_job_operation_name);
-
-  if (parsedBody.status !== "started") {
-    // lets wait about 10 seconds before we check the status
-    try {
-      const res = await job?.promise();
-      console.log("[JOB] Job succeded", job.latestResponse.result);
-      const updatedDeployment = await db
-        .update(deployments)
-        .set({
-          status: "SUCCEEDED",
-        })
-        .where(eq(deployments.id, deployment.id))
-        .returning();
-
-      console.log("Updated deployment", updatedDeployment);
-
-      // set this as active deployment
-      await db
-        .update(sites)
-        .set({
-          activeDeploymentId: deployment.id,
-        })
-        .where(eq(sites.id, deployment.siteId));
-
-      // get subdomains for this site and set them all to the new commit hash
-      const subdomains = await db.query.siteSubdomains.findMany({
-        where: eq(siteSubdomains.siteId, deployment.siteId),
-      });
-
-      for (const subdomain of subdomains) {
-        if (deployment.commitHash && subdomain?.subdomain) {
-          await redis.set(`sha:${subdomain.subdomain}`, deployment.commitHash);
-        }
-      }
-    } catch (err) {
-      console.log("[JOB] Job failed");
-      await db
-        .update(deployments)
-        .set({
-          status: "FAILED",
-        })
-        .where(eq(deployments.id, deployment.id));
-    }
+  if (deployment.site.type === "server") {
+    await getServerBuildStatus(deployment.gcp_job_operation_name);
+    // TODO: handle bulid appropraitely and deploy lol
   } else {
-    await db
-      .update(deployments)
-      .set({ status: "BUILDING" })
-      .where(eq(deployments.id, deployment.id));
+    const job = await getJobStatus(deployment?.gcp_job_operation_name);
 
-    return NextResponse.json({ message: "Job is running" });
+    if (parsedBody.status !== "started") {
+      // lets wait about 10 seconds before we check the status
+      try {
+        const res = await job?.promise();
+        console.log("[JOB] Job succeded", job.latestResponse.result);
+        const updatedDeployment = await db
+          .update(deployments)
+          .set({
+            status: "SUCCEEDED",
+          })
+          .where(eq(deployments.id, deployment.id))
+          .returning();
+
+        console.log("Updated deployment", updatedDeployment);
+
+        // set this as active deployment
+        await db
+          .update(sites)
+          .set({
+            activeDeploymentId: deployment.id,
+          })
+          .where(eq(sites.id, deployment.siteId));
+
+        // get subdomains for this site and set them all to the new commit hash
+        const subdomains = await db.query.siteSubdomains.findMany({
+          where: eq(siteSubdomains.siteId, deployment.siteId),
+        });
+
+        for (const subdomain of subdomains) {
+          if (deployment.commitHash && subdomain?.subdomain) {
+            await redis.set(
+              `sha:${subdomain.subdomain}`,
+              deployment.commitHash,
+            );
+          }
+        }
+      } catch (err) {
+        console.log("[JOB] Job failed");
+        await db
+          .update(deployments)
+          .set({
+            status: "FAILED",
+          })
+          .where(eq(deployments.id, deployment.id));
+      }
+    } else {
+      await db
+        .update(deployments)
+        .set({ status: "BUILDING" })
+        .where(eq(deployments.id, deployment.id));
+
+      return NextResponse.json({ message: "Job is running" });
+    }
+
+    // console.log("Job", job);
+
+    return NextResponse.json({ message: "POST request received" });
   }
-
-  // console.log("Job", job);
-
-  return NextResponse.json({ message: "POST request received" });
 }

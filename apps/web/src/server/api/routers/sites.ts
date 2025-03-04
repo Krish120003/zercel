@@ -5,7 +5,11 @@ import { eq, and } from "drizzle-orm";
 import { env } from "process";
 import { Octokit } from "@octokit/rest";
 import { getJobLogs, requestBuild } from "~/server/lib/build";
-import { requestServerBuild } from "~/server/lib/serverBuild";
+import {
+  getServerBuildLogs,
+  getServerBuildStatus,
+  requestServerBuild,
+} from "~/server/lib/serverBuild";
 import { TRPCError } from "@trpc/server";
 import { parse } from "path";
 
@@ -182,7 +186,7 @@ export const sitesRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
-      const site = await ctx.db.query.sites.findFirst({
+      let site = await ctx.db.query.sites.findFirst({
         where: and(eq(sites.userId, userId), eq(sites.id, input.id)),
         with: {
           subdomains: true,
@@ -196,6 +200,66 @@ export const sitesRouter = createTRPCRouter({
           message: "Site not found.",
         });
       }
+
+      await Promise.all(
+        site?.deployments.map(async (deployment) => {
+          // if status is queued or building
+          if (
+            deployment.status === "QUEUED" ||
+            deployment.status === "BUILDING"
+          ) {
+            // get the status of the build
+            if (site!.type === "server" && deployment.gcp_job_execution_name) {
+              const status = await getServerBuildStatus(
+                deployment.gcp_job_execution_name,
+              );
+
+              if (status.status?.state === "SUCCEEDED") {
+                // update the deployment status
+                await ctx.db
+                  .update(deployments)
+                  .set({
+                    status: "SUCCEEDED",
+                  })
+                  .where(eq(deployments.id, deployment.id))
+                  .execute();
+              } else if (
+                status.status?.state === "FAILED" ||
+                status.status?.state === "CANCELLED"
+              ) {
+                // update the deployment status
+                await ctx.db
+                  .update(deployments)
+                  .set({
+                    status: "FAILED",
+                  })
+                  .where(eq(deployments.id, deployment.id))
+                  .execute();
+              } else if (status.status?.state === "RUNNING") {
+                // update the deployment status
+                await ctx.db
+                  .update(deployments)
+                  .set({
+                    status: "BUILDING",
+                  })
+                  .where(eq(deployments.id, deployment.id))
+                  .execute();
+              }
+            } else {
+              // TOOD: handle static site builds status
+            }
+          }
+        }),
+      );
+
+      // refresh the site object
+      site = await ctx.db.query.sites.findFirst({
+        where: and(eq(sites.userId, userId), eq(sites.id, input.id)),
+        with: {
+          subdomains: true,
+          deployments: true,
+        },
+      });
 
       site?.deployments.sort((a, b) => {
         return b.createdAt.getTime() - a.createdAt.getTime();
@@ -244,36 +308,51 @@ export const sitesRouter = createTRPCRouter({
       const userId = ctx.session.user.id;
 
       // get user's sites
-      const site = await ctx.db.query.sites.findMany({
+      const userSites = await ctx.db.query.sites.findMany({
         where: and(eq(sites.userId, userId)),
         with: {
           deployments: true,
         },
       });
 
-      const userDeployments = site.flatMap((site) => site.deployments);
+      // FIXME: there is probably a better way to do this?
+      const userDeployments = userSites.flatMap((site) => site.deployments);
 
       // get the deployment
       const deployment = userDeployments.find(
         (deployment) => deployment.id === input.deploymentId,
       );
 
-      if (!deployment?.gcp_job_execution_name) {
+      if (
+        !deployment?.gcp_job_execution_name ||
+        !deployment?.gcp_job_operation_name
+      ) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Deployment not found.",
         });
       }
 
-      const isDeploymentDone = deployment.status === "SUCCEEDED";
+      const isDeploymentDone =
+        deployment.status !== "QUEUED" && deployment.status !== "BUILDING";
 
       if (isDeploymentDone && deployment.buildLogs) {
         console.log("Serving logs from cache for deployment", deployment.id);
         return logSchema.parse(JSON.parse(deployment.buildLogs));
       }
 
+      // we need to get this deployment's site
+      const site = await ctx.db.query.sites.findFirst({
+        where: and(eq(sites.id, deployment.siteId), eq(sites.userId, userId)),
+      });
+
+      let logs;
+      if (site?.type === "server") {
+        [logs] = await getServerBuildLogs(deployment.gcp_job_operation_name);
+      } else {
+        [logs] = await getJobLogs(deployment.gcp_job_execution_name);
+      }
       // we need to fetch them from the GCP logs
-      const [logs] = await getJobLogs(deployment.gcp_job_execution_name);
 
       const dataUnsorted: {
         timestamp: Date;
@@ -510,6 +589,7 @@ export const sitesRouter = createTRPCRouter({
         if (site.type === "server") {
           // For server sites, use the server build process
           [execution, operation] = await requestServerBuild(
+            site,
             deployment[0]!,
             `https://github.com/${site.repository}`,
             activeDeployment?.commitHash ?? "",
