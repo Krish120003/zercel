@@ -63,7 +63,7 @@ export function ProjectItem({ project }: ProjectItemProps) {
           <GitBranch className="w-[1.5ch]" /> {project.branch}
         </div>
       </div>
-      <div className="col-span-2 flex items-center justify-end opacity-0 group-hover:opacity-100">
+      <div className="col-span-2 flex items-center justify-end opacity-100">
         <Button asChild>
           <Link href={`/site/?id=${project.id}`}>Edit</Link>
         </Button>
