@@ -73,7 +73,7 @@ export const DeploymentItem = ({ deployment }: { deployment: Deployment }) => {
     {
       enabled: isShowingLogs,
       // Add refetch interval if status is not SUCCEEDED
-      refetchInterval: isRefetchingLogs ? 5000 : false,
+      refetchInterval: isRefetchingLogs ? 15000 : false,
     },
   );
 
@@ -163,7 +163,7 @@ export const DeploymentItem = ({ deployment }: { deployment: Deployment }) => {
                     "grid w-full cursor-pointer grid-cols-12 px-4",
                     {
                       "bg-red-100 text-red-500 dark:bg-red-900/40 dark:text-red-500":
-                        log.message.toLowerCase().includes("error"),
+                        log.message.toLowerCase().trim().startsWith("error"),
                     },
                   )}
                 >
