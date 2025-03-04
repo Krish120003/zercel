@@ -231,10 +231,9 @@ echo "Build and push completed successfully"
             machineType: "e2-medium",
             // Use Debian or Ubuntu image that supports Docker installation
             bootDisk: {
-              sourceImage:
-                "projects/debian-cloud/global/images/family/debian-11",
-              diskSizeGb: 20,
-              diskType: "pd-standard",
+              image: "projects/debian-cloud/global/images/family/debian-11",
+              sizeGb: 20,
+              type: "pd-standard",
             },
           },
         },
@@ -260,11 +259,11 @@ echo "Build and push completed successfully"
     });
 
     // Extract the job name from the response
-    const jobNameFromResponse = response[0]?.name || null;
+    const jobNameFromResponse = response[0]?.name ?? null;
     console.log("Batch job submitted:", jobNameFromResponse);
 
     // Extract the job ID from the response
-    const jobId = jobNameFromResponse?.split("/").pop() || null;
+    const jobId = jobNameFromResponse?.split("/").pop() ?? null;
 
     return [jobNameFromResponse, jobId];
   } catch (error) {
@@ -318,7 +317,7 @@ export async function getServerBuildLogs(jobName: string) {
 
     return [
       {
-        message: `Job status: ${job.status?.state || "Unknown"}. Detailed logs not yet implemented.`,
+        message: `Job status: ${job.status?.state ?? "Unknown"}. Detailed logs not yet implemented.`,
       },
     ];
   } catch (error) {
