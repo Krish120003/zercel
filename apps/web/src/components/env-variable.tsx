@@ -89,7 +89,6 @@ export default function EnvVariables({
 
   const handlePaste = useCallback(
     (event: React.ClipboardEvent) => {
-      event.preventDefault();
       const content = event.clipboardData.getData("text");
       const parsedVars = parseEnvContent(content);
 
@@ -104,6 +103,7 @@ export default function EnvVariables({
 
         // Convert map back to array
         setEnvVars(Array.from(existingVars.values()));
+        event.preventDefault();
       }
     },
     [envVars, parseEnvContent],
