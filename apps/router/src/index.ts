@@ -5,11 +5,13 @@ import { promises as fs } from "fs";
 import { lookup } from "mime-types";
 import { Redis } from "ioredis";
 import type { StatusCode } from "hono/utils/http-status";
+import { compress } from "hono/compress";
 
 const REDIS_URL = process.env.REDIS_URL || "";
 
 const client = new Redis(REDIS_URL);
 const app = new Hono();
+app.use(compress());
 
 // Cache interface
 interface CacheEntry {
