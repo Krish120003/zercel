@@ -81,9 +81,10 @@ app.use("*", async (c, next) => {
       console.log(
         `[PROXY] Sending ${c.req.method} request to ${fullTargetUrl}`
       );
+      const headers = c.req.header();
       const response = await fetch(fullTargetUrl, {
         method: c.req.method,
-        headers: c.req.header(),
+        headers: headers,
         body:
           c.req.method !== "GET" && c.req.method !== "HEAD"
             ? await c.req.blob()
@@ -98,6 +99,9 @@ app.use("*", async (c, next) => {
 
       // Copy all headers from the proxied response
       for (const [key, value] of response.headers.entries()) {
+        if (key === "transfer-encoding" || key === "content-encoding") {
+          continue;
+        }
         c.header(key, value);
         console.log(`[PROXY] Setting header: ${key}: ${value}`);
       }
