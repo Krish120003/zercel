@@ -142,13 +142,15 @@ ${Object.entries(envVars)
 # Function to send callback
 send_callback() {
     local exit_code=$?
-    local status="SUCCEEDED"
+    local status="success"
     if [ $exit_code -ne 0 ]; then
-        status="FAILED"
+        status="error"
     fi
     
     if [ ! -z "$ZERCEL_CALLBACK_URL" ]; then
-        curl -s --max-time 10 -X POST "$ZERCEL_CALLBACK_URL&status=$status" || {
+        curl -s --max-time 10 -X POST "$ZERCEL_CALLBACK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"status\":\"$status\",\"exit_code\":$exit_code}" || {
             echo "Warning: Callback failed to send, but continuing..."
         }
     fi
@@ -159,10 +161,16 @@ trap send_callback EXIT
 
 # Send initial callback
 if [ ! -z "$ZERCEL_CALLBACK_URL" ]; then
-    curl -s -X POST "$ZERCEL_CALLBACK_URL&status=BUILDING" || {
+    response=$(curl -s -X POST "$ZERCEL_CALLBACK_URL" \
+        -H "Content-Type: application/json" \
+        -d "{\"status\":\"started\",\"exit_code\":0}")
+    
+    if [ $? -eq 0 ]; then
+        echo "Initial callback response: $response"
+    else
         echo "Warning: Initial callback failed to send"
-    }
-fi
+    fi
+}
 
 # Create workspace directory
 mkdir -p /workspace
