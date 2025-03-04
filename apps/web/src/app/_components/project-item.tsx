@@ -65,7 +65,7 @@ export function ProjectItem({ project }: ProjectItemProps) {
       </div>
       <div className="col-span-2 flex items-center justify-end opacity-100">
         <Button asChild>
-          <Link href={`/site/?id=${project.id}`}>Edit</Link>
+          <Link href={`/site/?id=${project.id}`}>Manage</Link>
         </Button>
       </div>
     </div>
