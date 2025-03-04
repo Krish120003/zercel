@@ -143,6 +143,7 @@ export const sitesRouter = createTRPCRouter({
       if (site[0]!.type === "server") {
         // For server sites, use the server build process
         [execution, operation] = await requestServerBuild(
+          site[0]!,
           deployment[0]!,
           repoDetails.html_url,
           commitHash,
