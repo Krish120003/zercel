@@ -84,6 +84,15 @@ app.use("*", async (c, next) => {
         `[PROXY] Sending ${c.req.method} request to ${fullTargetUrl}`
       );
       const headers = c.req.header();
+
+      // we need to add appropirate forward headers so cloud run doesnt overwrite and ourr next action doest fail
+      if (host) {
+        headers["x-forwarded-host"] = host;
+      }
+      if (c.req.header("x-forwarded-for") !== undefined) {
+        headers["x-forwarded-for"] = c.req.header("x-forwarded-for")!;
+      }
+
       const response = await fetch(fullTargetUrl, {
         method: c.req.method,
         headers: headers,
