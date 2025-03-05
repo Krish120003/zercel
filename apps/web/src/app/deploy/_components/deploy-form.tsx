@@ -62,7 +62,7 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
       router.push(`/site?id=${data.id}`);
     },
     async onError(err) {
-      toast(`Error - ${err}`);
+      toast(`Error - ${JSON.stringify(err)}`);
     },
   });
 

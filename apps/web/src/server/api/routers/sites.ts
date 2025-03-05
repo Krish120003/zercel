@@ -11,7 +11,6 @@ import {
   requestServerBuild,
 } from "~/server/lib/serverBuild";
 import { TRPCError } from "@trpc/server";
-import { parse } from "path";
 
 const subdomainSchema = z
   .string()
