@@ -21,11 +21,15 @@ export function EnvManager({ siteId, initialEnvVars = [] }: EnvManagerProps) {
   const [saveType, setSaveType] = useState<"save" | "build" | null>(null);
   const router = useRouter();
 
+  const trpc = api.useUtils();
+
   const editEnvVarsMutation = api.sites.editSiteEnvVars.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       router.refresh();
+
       toast.success("Environment variables saved successfully");
       setSaveType(null);
+      await trpc.sites.get.invalidate({ id: siteId });
     },
     onError: (error) => {
       toast.error(error.message);

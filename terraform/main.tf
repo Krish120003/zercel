@@ -494,6 +494,14 @@ resource "google_certificate_manager_certificate_map" "z-map" {
 #   hostname     = "*.zercel.dev"
 # }
 
+// Please give the nextjs-app permission to adjust IAM roles for other services
+resource "google_cloud_run_service_iam_member" "nextjs_app" {
+  location = google_cloud_run_v2_service.nextjs_app.location
+  service  = google_cloud_run_v2_service.nextjs_app.name
+  role     = "roles/run.serviceAdmin"
+  member   = "serviceAccount:${google_cloud_run_v2_service.nextjs_app.service_account_email}"
+}
+
 // Batch Job service account
 resource "google_service_account" "batch_job_service_account" {
   account_id   = "batch-job-sa"

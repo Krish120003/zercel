@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { sites, siteSubdomains, deployments } from "../../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { env } from "process";
 import { Octokit } from "@octokit/rest";
 import { getJobLogs, requestBuild } from "~/server/lib/build";
@@ -561,9 +561,41 @@ export const sitesRouter = createTRPCRouter({
         .returning();
 
       if (input.triggerBuild) {
+        let repoDetails = undefined;
+        const [_owner, _repo] = siteUpdated[0]!.repository!.split("/");
+        const owner = _owner ?? "";
+        const repo = _repo ?? "";
+        try {
+          const octokit = new Octokit({ auth: ctx.session.user.accessToken });
+          const { data } = await octokit.rest.repos.get({
+            owner: owner,
+            repo: repo,
+          });
+
+          // if data is null, the user doesn't have access to the repo
+          if (!data) {
+            throw new Error(
+              "Repository not found or you don't have access to it.",
+            );
+          }
+
+          repoDetails = data;
+        } catch (error) {
+          console.error(error);
+          throw new Error(
+            "Repository not found or you don't have access to it.",
+          );
+        }
+
+        const branchName = repoDetails.default_branch; // TODO: GET
+
         // get the branch and commit hash of the active deployment
         const activeDeployment = await ctx.db.query.deployments.findFirst({
-          where: eq(deployments.id, siteUpdated[0]!.activeDeploymentId ?? ""),
+          where: and(
+            eq(deployments.siteId, siteUpdated[0]!.id),
+            eq(deployments.branch, branchName),
+          ),
+          orderBy: [desc(deployments.createdAt)],
         });
 
         // get repo url

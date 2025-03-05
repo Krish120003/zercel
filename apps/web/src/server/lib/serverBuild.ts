@@ -20,60 +20,22 @@ type BatchJobResource = google.cloud.batch.v1.IJob;
 const batchClient = new BatchServiceClient();
 const logging = new Logging();
 
-/**
- * Submits a GCP Batch job to build a Docker container using a VM instance
- * This is used for server-type deployments that need containerization
- *
- * @param deployment The deployment record from the database
- * @param github_clone_url The GitHub repository URL to clone
- * @param sha The commit hash to checkout (optional)
- * @returns A tuple containing [jobName, jobId] or [null, null] if the job submission fails
- */
-export async function requestServerBuild(
-  site: Site,
-  deployment: Deployment,
-  github_clone_url: string,
-  sha?: string,
-): Promise<[string | null, string | null]> {
-  // Create a client for the Batch service
+function getBulidDockerfile(envVars: Record<string, string>) {
+  return `
+FROM node:20-alpine AS builder
 
-  // Get configuration from environment variables
-  const projectId = env.GOOGLE_CLOUD_PROJECT;
-  const location = env.BUILDER_JOB_LOCATION; // Using the same location as the Cloud Run job
+# Args
+${Object.keys(envVars)
+  .map((key) => `ARG ${key}`)
+  .join("\n")}
 
-  // Parse environment variables from the deployment
-  const envVars: Record<string, string> = {};
-
-  try {
-    if (deployment.environmentVariables) {
-      const userEnvVars = JSON.parse(
-        deployment.environmentVariables,
-      ) as EnvVarEntry[];
-      for (const envVar of userEnvVars) {
-        if (envVar.key && envVar.key.trim() !== "") {
-          envVars[envVar.key] = envVar.value || "";
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Error parsing environment variables:", error);
-  }
-
-  // Add required environment variables for the build
-  envVars.ZERCEL_REPO_URL = github_clone_url;
-  envVars.ZERCEL_CALLBACK_URL = `${env.BUILDER_CALLBACK_URL}?deployment_id=${deployment.id}`;
-  envVars.ZERCEL_BUILD_TYPE = "server"; // Explicitly set to server type
-
-  if (sha) {
-    envVars.ZERCEL_REPO_SHA = sha;
-  }
-
-  // Create a unique job name based on the deployment ID
-  const jobName = `zercel-build-${deployment.id}`;
-
-  // Define our custom Dockerfile content
-  const dockerfileContent = `FROM node:20-alpine AS builder
-
+  
+${Object.entries(envVars)
+  .map(([key, value]) => `ENV ${key}="${value}"`)
+  .join("\n")}
+    
+# Env
+ENV NODE_ENV=production
 WORKDIR /app
 
 # Copy package files
@@ -116,15 +78,65 @@ EXPOSE 3000
 # Start the application
 CMD ["npm", "start"]
 `;
+}
+
+export async function requestServerBuild(
+  site: Site,
+  deployment: Deployment,
+  github_clone_url: string,
+  sha?: string,
+): Promise<[string | null, string | null]> {
+  // Create a client for the Batch service
+
+  // Get configuration from environment variables
+  const projectId = env.GOOGLE_CLOUD_PROJECT;
+  const location = env.BUILDER_JOB_LOCATION; // Using the same location as the Cloud Run job
+
+  // Parse environment variables from the deployment
+  const envVars: Record<string, string> = {};
+
+  try {
+    if (deployment.environmentVariables) {
+      const userEnvVars = JSON.parse(
+        deployment.environmentVariables,
+      ) as EnvVarEntry[];
+      for (const envVar of userEnvVars) {
+        if (envVar.key && envVar.key.trim() !== "") {
+          envVars[envVar.key] = envVar.value || "";
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error parsing environment variables:", error);
+  }
+
+  // Add required environment variables for the build
+  envVars.ZERCEL_REPO_URL = github_clone_url;
+  envVars.ZERCEL_CALLBACK_URL = `${env.BUILDER_CALLBACK_URL}?deployment_id=${deployment.id}`;
+  envVars.ZERCEL_BUILD_TYPE = "server"; // Explicitly set to server type
+  envVars.VERCEL_DEPLOYMENT_ID = deployment.id;
+  envVars.VERCEL_SKEW_PROTECTION_ENABLED = "1";
+  envVars.NODE_ENV = "production";
+
+  if (sha) {
+    envVars.ZERCEL_REPO_SHA = sha;
+  }
+
+  // Create a unique job name based on the deployment ID
+  const jobName = `zercel-build-${deployment.id}`;
+
+  // Define our custom Dockerfile content
+  const dockerfileContent = getBulidDockerfile(envVars);
 
   // Define the startup script for the VM
   const startupScript = `#!/bin/bash
 # Exit immediately if a command exits with a non-zero status
 set -e
+set -x
 
 # Set environment variables
 ${Object.entries(envVars)
-  .map(([key, value]) => `export ${key}="${value}"`)
+  .map(([key, value]) => `export ${key}="${value.replace(/"/g, '\\"')}"`)
   .join("\n")}
 
 # Install necessary packages
@@ -144,6 +156,18 @@ systemctl start docker
 export PATH=$PATH:/usr/bin
 
 
+echo "Sending Initial Callback"
+
+# Send initial callback
+if [ ! -z "$ZERCEL_CALLBACK_URL" ]; then
+    response=$(curl -s -X POST "$ZERCEL_CALLBACK_URL" -H "Content-Type: application/json" -d "\{\\\"status\\\":\\\"started\\\",\\\"exit_code\\\":0\}")
+
+    if [ $? -eq 0 ]; then
+        echo "Initial callback response: $response"
+    else
+        echo "Warning: Initial callback failed to send"
+    fi
+fi
 
 # Function to send callback
 send_callback() {
@@ -156,7 +180,7 @@ send_callback() {
     if [ ! -z "$ZERCEL_CALLBACK_URL" ]; then
         curl -s --max-time 10 -X POST "$ZERCEL_CALLBACK_URL" \
             -H "Content-Type: application/json" \
-            -d "{\"status\":\"$status\",\"exit_code\":$exit_code}" || {
+            -d "\{\\\"status\\\":\\\"$status\\\",\\\"exit_code\\\":$exit_code\}" || {
             echo "Warning: Callback failed to send, but continuing..."
         }
     fi
@@ -164,19 +188,6 @@ send_callback() {
 
 # Set up trap to catch script exit
 trap send_callback EXIT
-
-# Send initial callback
-if [ ! -z "$ZERCEL_CALLBACK_URL" ]; then
-    response=$(curl -s -X POST "$ZERCEL_CALLBACK_URL" \
-        -H "Content-Type: application/json" \
-        -d "{\"status\":\"started\",\"exit_code\":0}")
-    
-    if [ $? -eq 0 ]; then
-        echo "Initial callback response: $response"
-    else
-        echo "Warning: Initial callback failed to send"
-    fi
-}
 
 # Create workspace directory
 mkdir -p /workspace
@@ -202,7 +213,13 @@ gcloud auth configure-docker gcr.io --quiet
 
 # Build the Docker container
 IMAGE_NAME="gcr.io/${projectId}/zercel-${site.id}:${deployment.id}"
-docker build -t $IMAGE_NAME .
+echo "Building Docker container..."
+
+ENV_VARS='${Object.entries(envVars)
+    .map(([key, value]) => `--build-arg ${key}="${value.replace(/"/g, '\\"')}"`)
+    .join(" ")}'
+
+docker build $ENV_VARS -t "$IMAGE_NAME" .
 
 # Push the container to registry
 echo "Pushing container to Google Container Registry"
