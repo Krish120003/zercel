@@ -6,6 +6,8 @@ God's greatest [Vercel](https://vercel.com) clone. Made by [Krish](https://x.com
 
 ![Zercel Project Screenshot](static/zercel_home.png)
 
+Writeup/Blog coming soon!
+
 ## 🌟 Features
 
 - Automatic GitHub Deployments $_1$
