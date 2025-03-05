@@ -7,6 +7,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { ThemeProvider } from "~/components/theme-provider";
 
 import { Toaster } from "~/components/ui/sonner";
+import { NewsBanner } from "~/components/news-banner";
 
 export const metadata: Metadata = {
   title: "Zercel",
@@ -31,6 +32,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <NewsBanner />
             <main className="flex-1">{children}</main>
             <Toaster />
           </ThemeProvider>

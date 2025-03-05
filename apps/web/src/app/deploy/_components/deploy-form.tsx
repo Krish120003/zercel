@@ -29,6 +29,7 @@ import EnvVariableForm from "~/components/env-variable";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   name: z.string().min(1, "Site name is required"),
@@ -59,6 +60,9 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
   const mutation = api.sites.create.useMutation({
     async onSuccess(data) {
       router.push(`/site?id=${data.id}`);
+    },
+    async onError(err) {
+      toast(`Error - ${err}`);
     },
   });
 
@@ -139,7 +143,7 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
                     </label>
 
                     <label
-                      className={`col-span-1 flex cursor-pointer flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent ${field.value === "server" ? "border-primary bg-accent/50" : "border-border"}`}
+                      className={`col-span-1 flex cursor-not-allowed flex-col items-center rounded-lg border bg-muted p-4 opacity-50 transition-all`}
                       htmlFor="server-type"
                     >
                       <div className="mb-2 rounded-full bg-primary/10 p-2">
@@ -147,13 +151,14 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
                       </div>
                       <span className="font-medium">Server</span>
                       <span className="text-xs text-muted-foreground">
-                        Next.js, Vite with SSR
+                        Next.js, Vite with SSR (Coming Soon)
                       </span>
                       <input
                         type="radio"
                         id="server-type"
                         value="server"
                         className="sr-only"
+                        disabled
                         checked={field.value === "server"}
                         onChange={() => field.onChange("server")}
                       />

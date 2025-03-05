@@ -66,6 +66,10 @@ export const sitesRouter = createTRPCRouter({
         );
       }
 
+      if (input.type === "server") {
+        throw new TRPCError({ code: "SERVICE_UNAVAILABLE" });
+      }
+
       const octokit = new Octokit({ auth: accessToken });
 
       // Check if the user owns the repository
