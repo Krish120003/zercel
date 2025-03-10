@@ -199,6 +199,7 @@ export const deployments = createTable("deployment", {
 
   // For Server Sites - GCP Cloud Run Revision Identifiers
   gcp_cloud_run_revision: text("gcp_cloud_run_revision"),
+  gcp_cloud_run_url: text("gcp_cloud_run_url"),
 });
 
 export const deploymentsRelations = relations(deployments, ({ one }) => ({

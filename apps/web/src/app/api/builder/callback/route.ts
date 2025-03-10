@@ -133,6 +133,7 @@ export async function POST(request: NextRequest) {
             traffic: [
               {
                 percent: 100,
+                // FIXME: This traffic config resets the other tags
                 revision: `z${deployment.site.id}-${deployment.id.slice(0, 7)}`,
                 tag: `z${deployment.id.slice(0, 7)}`,
                 type: "TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION",
@@ -176,9 +177,18 @@ export async function POST(request: NextRequest) {
           })
           .where(eq(sites.id, deployment.site.id));
 
-        const targetUrl = service.urls?.[0];
+        let targetUrl = service.urls?.[0];
 
         if (targetUrl) {
+          targetUrl = targetUrl.replace(/\/+$/, "");
+          // set the url on the deployment
+          await db
+            .update(deployments)
+            .set({
+              gcp_cloud_run_url: targetUrl,
+            })
+            .where(eq(deployments.id, deployment.id));
+
           const subdomains = await db.query.siteSubdomains.findMany({
             where: eq(siteSubdomains.siteId, deployment.site.id),
           });
@@ -186,10 +196,7 @@ export async function POST(request: NextRequest) {
           // we also need to set the url since this is the first
           for (const subdomain of subdomains) {
             if (subdomain?.subdomain) {
-              await redis.set(
-                `sha:${subdomain.subdomain}`,
-                `url:${targetUrl.replace(/\/+$/, "")}`,
-              );
+              await redis.set(`sha:${subdomain.subdomain}`, `url:${targetUrl}`);
             }
           }
         }

@@ -65,9 +65,9 @@ export const sitesRouter = createTRPCRouter({
         );
       }
 
-      if (input.type === "server") {
-        throw new TRPCError({ code: "SERVICE_UNAVAILABLE" });
-      }
+      // if (input.type === "server") {
+      //   throw new TRPCError({ code: "SERVICE_UNAVAILABLE" });
+      // }
 
       const octokit = new Octokit({ auth: accessToken });
 
@@ -464,11 +464,14 @@ export const sitesRouter = createTRPCRouter({
           where: eq(deployments.id, site.activeDeploymentId),
         });
 
+        // is this a url one?
+
         if (activeDeployment) {
-          await ctx.redis.set(
-            `sha:${subdomain[0]!.subdomain}`,
-            activeDeployment.commitHash!,
-          );
+          const value = activeDeployment.gcp_cloud_run_url
+            ? `url:${activeDeployment.gcp_cloud_run_url}`
+            : activeDeployment.commitHash!;
+
+          await ctx.redis.set(`sha:${subdomain[0]!.subdomain}`, value);
         }
       }
 

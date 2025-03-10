@@ -30,6 +30,7 @@ import Link from "next/link";
 import { api } from "~/trpc/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "~/lib/utils";
 
 const formSchema = z.object({
   name: z.string().min(1, "Site name is required"),
@@ -122,7 +123,14 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
                   <FormLabel>Site Type</FormLabel>
                   <div className="grid w-full grid-cols-2 gap-4">
                     <label
-                      className={`col-span-1 flex cursor-pointer flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent ${field.value === "static" ? "border-primary bg-accent/50" : "border-border"}`}
+                      className={cn(
+                        `col-span-1 flex cursor-pointer flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent`,
+                        {
+                          "border-primary bg-accent/50":
+                            field.value === "static",
+                          "border-border": field.value !== "static",
+                        },
+                      )}
                       htmlFor="static-type"
                     >
                       <div className="mb-2 rounded-full bg-primary/10 p-2">
@@ -143,7 +151,14 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
                     </label>
 
                     <label
-                      className={`col-span-1 flex cursor-not-allowed flex-col items-center rounded-lg border bg-muted p-4 opacity-50 transition-all`}
+                      className={cn(
+                        `col-span-1 flex cursor-pointer flex-col items-center rounded-lg border p-4 transition-all hover:bg-accent`,
+                        {
+                          "border-primary bg-accent/50":
+                            field.value === "server",
+                          "border-border": field.value !== "server",
+                        },
+                      )}
                       htmlFor="server-type"
                     >
                       <div className="mb-2 rounded-full bg-primary/10 p-2">
@@ -151,14 +166,13 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
                       </div>
                       <span className="font-medium">Server</span>
                       <span className="text-xs text-muted-foreground">
-                        Next.js, Vite with SSR (Coming Soon)
+                        Next.js, Vite with SSR
                       </span>
                       <input
                         type="radio"
                         id="server-type"
                         value="server"
                         className="sr-only"
-                        disabled
                         checked={field.value === "server"}
                         onChange={() => field.onChange("server")}
                       />
