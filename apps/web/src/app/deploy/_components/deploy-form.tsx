@@ -187,6 +187,7 @@ export default function DeployForm({ repoDetails }: DeployFormProps) {
               <EnvVariableForm
                 initalEnvVars={environmentVariables}
                 // onSubmit={(data) => console.log("Env Variables:", data)}
+                onEnvVarsChange={setEnvironmentVariables}
               />
             </div>
           </div>
