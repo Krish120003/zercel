@@ -6,7 +6,7 @@ God's greatest [Vercel](https://vercel.com) clone. Made by [Krish](https://x.com
 
 ![Zercel Project Screenshot](static/zercel_home.png)
 
-Writeup/Blog coming soon!
+Checkout a blog post on the technical decisions and details!: [krish.gg/blog/making-a-vercel-clone](https://www.krish.gg/blog/making-a-vercel-clone)
 
 ## 🌟 Features
 
